@@ -141,6 +141,10 @@ button{font:inherit;color:var(--text);cursor:pointer}
 .tb small{color:var(--muted);font-size:11px}
 .tb.on{border-color:var(--accent);background:var(--panel2)}
 .tb.off{opacity:.45}
+.sel .syn{color:#ffd65a}
+.tb{touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+#dhint{position:fixed;left:50%;bottom:70px;transform:translateX(-50%);z-index:20;background:rgba(10,14,18,.92);border:1px solid var(--accent);border-radius:10px;padding:6px 12px;font-size:13px;pointer-events:none;opacity:0;transition:opacity .2s;white-space:nowrap}
+#dhint.show{opacity:1}
 .sk{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:7px 10px;min-width:110px;display:flex;flex-direction:column;gap:2px;overflow:hidden}
 .sk b{font:700 12px var(--display)}
 .sk small{color:var(--muted);font-size:11px}
@@ -322,7 +326,7 @@ var META=[
 ];
 var meta={crystals:0,lv:{},castle:'china',cx:{},diff:'normal',nick:'',rank:{}};
 var RANKMAX=10,NICKMAX=14;
-function loadMeta(){try{var j=JSON.parse(localStorage.getItem('bib-meta')||'null');if(j&&typeof j.crystals==='number'){meta=j;meta.lv=meta.lv||{};meta.cx=meta.cx||{};meta.castle=meta.castle||'china';meta.diff=meta.diff||'normal';meta.nick=typeof meta.nick==='string'?meta.nick:'';meta.rank=meta.rank||{}}}catch(e){}}
+function loadMeta(){try{var j=JSON.parse(localStorage.getItem('bib-meta')||'null');if(j&&typeof j.crystals==='number'){meta=j;meta.lv=meta.lv||{};meta.cx=meta.cx||{};meta.castle=meta.castle||'china';meta.diff=meta.diff||'normal';meta.fac=FAC&&FAC[meta.fac]?meta.fac:'aliens';meta.nick=typeof meta.nick==='string'?meta.nick:'';meta.rank=meta.rank||{}}}catch(e){}}
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function nickOf(){return (meta.nick||'').trim().slice(0,NICKMAX)||'Gracz'}
 function rankList(d){return (meta.rank[d]=meta.rank[d]||[])}
@@ -341,7 +345,22 @@ function cxNeed(l){return 120*l}
 /* ---------- Zapis gier (do późniejszej analizy balansu) ----------
    Każdy zakończony, zakończony przyciskiem lub porzucony run trafia do localStorage ('bib-runs', ostatnie RUNMAX).
    Format rekordu opisany w CLAUDE.md. Nick nie jest zapisywany. */
-var RUNKEY='bib-runs',RUNMAX=200,GAMEVER='2026.11.25';
+var RUNKEY='bib-runs',RUNMAX=200,GAMEVER='2026.11.25.4';
+/* Automatyczne wysyłanie runów do analizy: adres punktu zbierającego (patrz tools/collector-apps-script.js). Pusty = wysyłanie wyłączone.
+   Wysyła się anonimowy rekord runu (bez nicku i bez identyfikatora), o ile gracz nie wyłączył opcji (meta.share). */
+var COLLECTURL='';
+function shareHTML(){
+  if(!COLLECTURL)return '';
+  return '<label class="nickrow" style="flex-wrap:wrap"><input id="share" type="checkbox" style="width:auto"'+(meta.share===false?'':' checked')+'> Wysyłaj anonimowo przebieg gier do analizy balansu (bez nicku i danych osobowych)</label>';
+}
+function sendRun(rec){
+  if(!COLLECTURL||meta.share===false)return;
+  try{
+    var body=JSON.stringify({game:'ostatni-bastion',run:rec});
+    if(navigator.sendBeacon&&navigator.sendBeacon(COLLECTURL,new Blob([body],{type:'text/plain;charset=UTF-8'})))return;
+    if(typeof fetch==='function')fetch(COLLECTURL,{method:'POST',mode:'no-cors',keepalive:true,headers:{'Content-Type':'text/plain;charset=UTF-8'},body:body}).catch(function(){});
+  }catch(e){}
+}
 function loadRuns(){try{var j=JSON.parse(localStorage.getItem(RUNKEY)||'[]');return Array.isArray(j)?j:[]}catch(e){return []}}
 function storeRun(rec){
   var l=loadRuns();l.push(rec);if(l.length>RUNMAX)l=l.slice(l.length-RUNMAX);
@@ -359,10 +378,11 @@ function logWaveEnd(){
 function logRun(res){
   if(!S||!S.log||S.log.saved)return;
   S.log.saved=true;logWaveEnd();
-  storeRun({v:GAMEVER,at:new Date().toISOString(),cs:S.castle.id,cl:S.log.cl,df:S.did,res:res,wave:S.wave,score:S.score,kills:S.kills,bosses:S.bosses,
+  var rec={v:GAMEVER,at:new Date().toISOString(),cs:S.castle.id,cl:S.log.cl,df:S.did,fc:S.fac.id,res:res,wave:S.wave,score:S.score,kills:S.kills,bosses:S.bosses,
     hp:Math.max(0,S.baseHp),hpMax:S.baseMax,lvl:S.hero.lvl,gold:Math.floor(S.gold),gt:Math.round(S.time),rt:Math.round((Date.now()-S.log.t0)/1000),
     cr:S.earned||0,ml:JSON.parse(JSON.stringify(meta.lv)),tup:JSON.parse(JSON.stringify(S.tup)),sk:JSON.parse(JSON.stringify(S.skills)),items:S.items.slice(),
-    tw:S.towers.map(function(t){return [t.type,t.c,t.r]}),lk:S.log.lk,w:S.log.w,pk:S.log.pk,bd:S.log.bd});
+    tw:S.towers.map(function(t){return [t.type,t.c,t.r]}),lk:S.log.lk,w:S.log.w,pk:S.log.pk,bd:S.log.bd};
+  storeRun(rec);sendRun(rec);
 }
 function exportRuns(){
   try{
@@ -388,8 +408,8 @@ var ARCH=['cannon','frost','sniper','tesla','poison','mortar','laser'];
 var ROLE={arrow:'Szybki',cannon:'Obszarowa',frost:'Spowalnia',sniper:'Dalekosiężna',tesla:'Łańcuch',poison:'Trucizna',mortar:'Artyleria',laser:'Wiązka'};
 var DIFF={
   easy:{n:'Łatwy',hp:.85,cnt:1,spd:1,rw:.7,d:'Dla początkujących: najsłabsi wrogowie, normalna liczba w falach. Nagrody (kryształy i XP zamku) ×0,7.'},
-  normal:{n:'Normalny',hp:1.75,cnt:1.2,spd:1.05,rw:1,d:'Wyrównana walka: fale szybko rosną w siłę, wrogów jest o 20% więcej i są trochę szybsi. Wymaga rozsądnego budowania i wyboru ulepszeń. Nagrody ×1.'},
-  hard:{n:'Trudny',hp:2.15,cnt:1.4,spd:1.1,rw:1.5,d:'Dla doświadczonych: wrogowie mają ponad 2 razy więcej HP niż na Łatwym, jest ich o 40% więcej i są szybsi. Nagrody ×1,5.'},
+  normal:{n:'Normalny',hp:2,cnt:1.2,spd:1.05,rw:1,d:'Wyrównana walka: fale szybko rosną w siłę, wrogów jest o 20% więcej i są trochę szybsi. Wymaga rozsądnego budowania i wyboru ulepszeń. Nagrody ×1.'},
+  hard:{n:'Trudny',hp:2.4,cnt:1.4,spd:1.1,rw:1.5,d:'Dla doświadczonych: wrogowie mają ponad 2 razy więcej HP niż na Łatwym, jest ich o 40% więcej i są szybsi. Nagrody ×1,5.'},
   hardcore:{n:'Hardcore',hp:1.5,cnt:1.25,spd:1.08,rw:2.2,sg:100,hard:true,d:'Osobny tryb. Zamek ma tylko 1 HP: jeden kosmita, który dotrze do zamku, kończy run. Karty leczące są wyłączone. Wrogowie są trochę słabsi niż na Trudnym, a start daje +100 złota. Nagrody ×2,2.'}
 };
 var SLOTVAR=[[1,1.15,.9,1],[.9,1,1,1.1],[1.1,1.1,.95,1.08],[1,.95,1.15,1],[.95,1.1,1,.95],[1.05,1.05,.9,1.1],[1.1,.95,1.1,1]];
@@ -416,9 +436,10 @@ function buildTowerInfo(){
 }
 var ENEMY={
   grunt:{n:'Zielonek',hp:34,spd:42,gold:5,xp:5,dmg:1,r:9,color:'#7bff7b'},
-  runner:{n:'Spodek',hp:20,spd:80,gold:4,xp:5,dmg:1,r:8,color:'#ffd166'},
-  brute:{n:'Pancernik',hp:130,spd:28,gold:12,xp:12,dmg:2,r:13,color:'#d65db1'},
+  runner:{n:'Spodek',hp:20,spd:80,gold:4,xp:5,dmg:1,r:8,color:'#ffd166',rs:{splash:.6}},
+  brute:{n:'Pancernik',hp:130,spd:28,gold:12,xp:12,dmg:2,r:13,color:'#d65db1',arm:3},
   swarm:{n:'Rój',hp:11,spd:58,gold:2,xp:2,dmg:1,r:5,color:'#7be0c3'},
+  shield:{n:'Tarczownik',hp:75,spd:36,gold:8,xp:8,dmg:1,r:11,color:'#6ec8ff',rs:{energy:.4}},
   boss:{n:'Statek-matka',hp:900,spd:26,gold:90,xp:60,dmg:6,r:18,color:'#c9ff5a'}
 };
 var BOSS=[
@@ -426,9 +447,53 @@ var BOSS=[
   {id:'hunter',n:'Skurvvinox',t:'Kosmiczny łowca',hp:700,spd:62,gold:110,xp:70,dmg:6,r:13,color:'#ff4d6d',pts:500},
   {id:'god',n:'Bóg Kosmitów',t:'Szary Zbawiciel',hp:1900,spd:22,gold:160,xp:100,dmg:12,r:22,color:'#cfd6dc',pts:1000}
 ];
+/* Frakcje wrogów (wybór przed runem, meta.fac). Statystyki bazowe (ENEMY, BOSS) są wspólne, frakcja zmienia nazwy, wygląd i dodaje jedną mechanikę:
+   heal (Proboszcz leczy wrogów wokół), rage (poniżej 50% HP biegną szybciej), shield (tarcza = 20% HP), split (Streamer rozpada się na 3 Followerów).
+   Bossowie zachowują mechaniki po id: sultan (spowalnia wieże), hunter (unik), god (wskrzeszenie). `hp` to mnożnik HP frakcji do strojenia balansu. */
+function mkBoss(i,n,t,c){var b=BOSS[i],o={},k;for(k in b)o[k]=b[k];o.n=n;o.t=t;o.color=c;return o}
+var FAC={
+  aliens:{id:'aliens',n:'Kosmici',mech:'',hp:1,bd:BOSS,d:'Klasyczna inwazja: Zielonki, Spodki, Pancerniki i Rój. Bossowie: Al Husain Wisimulaha, Skurvvinox i Bóg Kosmitów. Bez dodatkowych mechanik.'},
+  church:{id:'church',n:'Kościelni',mech:'heal',hp:.8,d:'Procesja parafian. Proboszcz (wolny, wytrzymały) otacza się aurą, która leczy pobliskich wrogów (3,5% HP na sekundę w promieniu 2,5 kratki). Zabij go w pierwszej kolejności.',
+    e:{grunt:{n:'Parafianin',c:'#6b5a8c'},runner:{n:'Kleryk',c:'#2e2e3a'},brute:{n:'Proboszcz',c:'#8c2a3a'},swarm:{n:'Chórzystka',c:'#d9d2c0'},shield:{n:'Ministrant z tarczą',c:'#e8e0c8'}},
+    bd:[mkBoss(0,'Biskup Kadzidło','Kosmiczny dym: chmura spowalnia wieże','#e0c060'),mkBoss(1,'Kaznodzieja Szybkie Słowo','Wymyka się pociskom','#9a6bd6'),mkBoss(2,'Kardynał Purpuratus','Cud: jedno wskrzeszenie','#c0304a')]},
+  gopnik:{id:'gopnik',n:'Ruscy dresiarze',mech:'rage',hp:.93,d:'Banda z osiedla w dresach. Poniżej połowy HP wpadają w szał i biegną 40% szybciej, więc dobijaj ich od razu, nie zostawiaj rannych.',
+    e:{grunt:{n:'Gopnik',c:'#3b6fb0'},runner:{n:'Szczur z osiedla',c:'#c0392b'},brute:{n:'Byk',c:'#2d4a8a'},swarm:{n:'Kumpel z ławki',c:'#7a7f86'},shield:{n:'Dres w kamizelce',c:'#556b3a'}},
+    bd:[mkBoss(0,'Wujek Wasia','Boombox spowalnia wieże','#4a90d9'),mkBoss(1,'Siergiej Squat','Wymyka się pociskom','#d94a4a'),mkBoss(2,'Wielki Bratan','Powrót z ławki: jedno wskrzeszenie','#e8c04a')]},
+  pol:{id:'pol',n:'Politycy',mech:'shield',hp:.84,d:'Garnitury, krawaty i teczki. Immunitet: każdy polityk ma tarczę równą 20% swojego HP, którą trzeba zbić, zanim zacznie spadać zdrowie. Postacie są wymyślone, bez prawdziwych nazwisk.',
+    e:{grunt:{n:'Radny',c:'#4a5566'},runner:{n:'Rzecznik prasowy',c:'#2a3f6e'},brute:{n:'Minister',c:'#1f1f2b'},swarm:{n:'Asystent',c:'#8a8f99'},shield:{n:'Ochroniarz',c:'#2a2a2a'}},
+    bd:[mkBoss(0,'Prezydent Wielkich Obietnic','Konferencja prasowa spowalnia wieże','#c9a24a'),mkBoss(1,'Senator Teflon','Wymyka się pociskom','#7a8aa8'),mkBoss(2,'Dyktator Dożywotni','Reelekcja: jedno wskrzeszenie','#a8323a')]},
+  infl:{id:'infl',n:'Influenserzy',mech:'split',hp:1,d:'Lajki, filtry i live. Streamer po śmierci rozpada się na 3 Followerów, więc pilnuj, żeby nie dotarły do zamku całą chmarą.',
+    e:{grunt:{n:'Wannabe',c:'#ff7ac6'},runner:{n:'Tiktoker',c:'#2bf0ff'},brute:{n:'Streamer',c:'#8a4dff'},swarm:{n:'Follower',c:'#ffd24a'},shield:{n:'Moderator',c:'#3adfa0'}},
+    bd:[mkBoss(0,'Mega Youtuber Clickbait','Lag: spowalnia wieże','#ff4d6d'),mkBoss(1,'Prankster Szybkie Cięcie','Wymyka się pociskom','#2bf0ff'),mkBoss(2,'Król Algorytmu','Reupload: jedno wskrzeszenie','#b080ff')]}
+};
+var FACIDS=['aliens','church','gopnik','pol','infl'];
+function facOf(id){return FAC[id]||FAC.aliens}
 /* Punkty rankingowe za zabicie wroga (bossowie mają własne w BOSS) */
-var PTS={grunt:10,runner:12,brute:30,swarm:4,boss:500};
-var SULTAN_R=160;
+var PTS={grunt:10,runner:12,brute:30,swarm:4,shield:18,boss:500};
+var SULTAN_R=160,HEAL_R=80;
+/* Wieże: rosnący koszt kolejnych kopii, twardy limit sztuk na typ, sąsiedztwo (8 pól wokół), malejąca skuteczność ulepszeń kolejnych kopii */
+var TLIMIT=7,TCOSTUP=.15,TUPDEC=.08,SAMEPEN=.08,SAMEMAX=5,MIXBON=.06,MIXMAX=4,MORTAR_MIN=72;
+/* Pola specjalne mapy (losowe, 1–3 pola od ścieżki) */
+var SPEC={hill:{n:'Wzgórze',d:'+20% zasięgu wieży',col:'#d6b878'},power:{n:'Pole mocy',d:'+15% szybkostrzelności wieży',col:'#ffd23f'},mine:{n:'Złoże',d:'+6 zł po każdej fali za wieżę na polu',col:'#7be0c3'},rock:{n:'Głaz',d:'blokuje budowę',col:'#8c9ba7'}};
+/* Synergie sąsiadów. Wpis: [typ A, typ B, efekt dla A gdy obok stoi B, efekt dla B gdy obok stoi A, nazwa].
+   Efekty: dmg, rate, range, splash (+%), chain (+cele), crit (+szansa), slowed/pois (+% obrażeń w spowolnionych/zatrutych celach), tox (pioruny zatruwają). */
+var SYNU=[
+  ['frost','cannon',null,{slowed:.25},'Mróz i ogień'],
+  ['frost','mortar',null,{slowed:.25},'Mróz i ogień'],
+  ['frost','laser',null,{slowed:.25},'Mróz i ogień'],
+  ['poison','tesla',null,{tox:1},'Zatruty piorun'],
+  ['arrow','sniper',{range:.1},{crit:.2},'Spotter']
+];
+var CSYN={
+  china:[['sniper','laser',{dmg:.15},{range:.15},'Światło i strzała'],['poison','cannon',null,{pois:.2},'Proch alchemika'],['mortar','tesla',{splash:.15},{chain:1},'Smoczy grom']],
+  germany:[['laser','sniper',null,{crit:.15},'Reflektor oświetla cel'],['frost','poison',null,{dmg:.2},'Zasieki i ogień'],['cannon','mortar',{rate:.1},{rate:.1},'Zgrana artyleria']],
+  bears:[['frost','tesla',{range:.1},{slowed:.2},'Lodowy deszcz'],['poison','arrow',null,{pois:.2},'Muchomorowe strzały'],['laser','cannon',{rate:.1},{dmg:.15},'Tęczowy blask']],
+  cartel:[['frost','arrow',null,{slowed:.25},'Kolczatka i pościg'],['poison','mortar',null,{pois:.25},'Beczki i fajerwerki'],['tesla','sniper',null,{range:.12},'Latarnia z linii WN']],
+  slavs:[['poison','sniper',null,{pois:.25},'Zatrute groty'],['tesla','cannon',{dmg:.1},{rate:.12},'Młot i grom'],['laser','mortar',null,{splash:.15},'Totem oświetla cel']],
+  cyber:[['tesla','laser',{dmg:.12},{rate:.15},'Sprzężenie EMP'],['frost','sniper',null,{slowed:.3},'Cel unieruchomiony'],['mortar','sniper',{range:.1},{range:.12},'Namiar orbitalny']],
+  egypt:[['frost','poison',null,{dmg:.2},'Wylew Nilu'],['laser','sniper',{dmg:.12},{dmg:.12},'Oko Ra i Horusa'],['cannon','mortar',{range:.1},{splash:.12},'Kamienie i sfinks']],
+  rasta:[['arrow','cannon',{rate:.12},{rate:.12},'Rytm bębnów'],['frost','poison',null,{rate:.15},'Ziołowa kąpiel'],['laser','sniper',null,{dmg:.15},'Oko Lwa wskazuje']]
+};
 var CD={q:function(i){return Math.max(3,9.5-1.1*i)},r:function(i){return Math.max(9,19-2*i)}};
 
 var CASTLES=[
@@ -820,13 +885,78 @@ function drawBoss(g,e,t,col,fl,ph){
     g.strokeStyle='#2a2a2a';g.lineWidth=1;g.beginPath();g.arc(0,-r*.34,r*.1,.2,Math.PI-.2);g.stroke();
   }
 }
+/* Ludzcy wrogowie frakcji (Kościelni, dresiarze, politycy, influenserzy): jedna postać z dodatkami zależnymi od frakcji i typu. */
+function drawHum(g,e,t,col,fl,ph){
+  var r=e.r,f=e.fid,ty=e.type,bs=ty==='boss',big=ty==='brute'||bs,w=Math.sin(ph),i,k,wh=fl?'#fff':null;
+  var skin=fl?'#fff':'#f0c7a0',hy=-r*.62;
+  if(f==='gopnik'&&ty==='runner')g.translate(0,r*.2);
+  // nogi
+  g.strokeStyle=fl?'#fff':'#23232e';g.lineWidth=Math.max(2,r*.28);g.lineCap='round';
+  g.beginPath();g.moveTo(-r*.3,r*.35);g.lineTo(-r*.35+w*r*.35,r*1.05);g.moveTo(r*.3,r*.35);g.lineTo(r*.35-w*r*.35,r*1.05);g.stroke();g.lineCap='butt';
+  // aura leczenia Proboszcza
+  if(e.hl){g.strokeStyle='rgba(120,255,140,'+(.18+.12*Math.sin(t*3))+')';g.lineWidth=1.5;g.beginPath();g.arc(0,r*.3,HEAL_R,0,TAU);g.stroke()}
+  // tułów
+  g.fillStyle=col;
+  if(f==='church'){poly(g,[[-r*.5,-r*.3],[r*.5,-r*.3],[r*(big?1:.8),r*1.05],[-r*(big?1:.8),r*1.05]]);g.fill()}
+  else{g.beginPath();g.ellipse(0,r*.05,r*(big?.82:.6),r*.62,0,0,TAU);g.fill()}
+  // głowa
+  g.fillStyle=skin;disc(g,0,hy,r*.46);
+  g.fillStyle='#14141c';disc(g,-r*.17,hy+r*.02,r*.07);disc(g,r*.17,hy+r*.02,r*.07);
+  g.strokeStyle='#5a3a2a';g.lineWidth=1;g.beginPath();g.arc(0,hy+r*.18,r*.12,.2,Math.PI-.2);g.stroke();
+  if(f==='church'){
+    if(ty!=='grunt'){g.fillStyle=wh||'#fff';g.fillRect(-r*.15,-r*.3,r*.3,r*.1)}
+    if(ty==='grunt'){g.fillStyle=fl?'#fff':'#c8bfa8';g.beginPath();g.ellipse(0,hy-r*.38,r*.4,r*.16,0,Math.PI,0);g.fill()}
+    if(ty==='brute'){
+      var sw=Math.sin(t*3)*r*.4;
+      g.strokeStyle='#caa94a';g.lineWidth=1;g.beginPath();g.moveTo(r*.7,r*.1);g.lineTo(r*.7+sw,r*.95);g.stroke();
+      g.fillStyle='#e0c060';disc(g,r*.7+sw,r*.98,r*.2);
+      g.fillStyle='rgba(220,220,220,.35)';disc(g,r*.7+sw,r*1.25+Math.sin(t*5)*2,r*.18)
+    }
+    if(bs){
+      g.fillStyle=fl?'#fff':'#e0c060';poly(g,[[-r*.5,hy-r*.35],[0,-r*2.05],[r*.5,hy-r*.35]]);g.fill();
+      g.fillStyle=fl?'#fff':'#a82c3a';g.fillRect(-r*.08,-r*1.95,r*.16,r*.9);
+      g.strokeStyle='#e0c060';g.lineWidth=2;g.beginPath();g.moveTo(r*1.1,-r*.9);g.lineTo(r*1.1,r*1.05);g.stroke();disc(g,r*1.1,-r*1.0,r*.14);
+    }
+  }else if(f==='gopnik'){
+    g.strokeStyle=fl?'#fff':'rgba(255,255,255,.85)';g.lineWidth=Math.max(1,r*.12);
+    g.beginPath();g.moveTo(-r*.5,-r*.2);g.lineTo(-r*.55,r*.55);g.moveTo(r*.5,-r*.2);g.lineTo(r*.55,r*.55);g.stroke();
+    g.fillStyle=fl?'#fff':'#1d1d22';g.beginPath();g.ellipse(0,hy-r*.32,r*.5,r*.2,0,Math.PI,0);g.fill();g.fillRect(-r*.52,hy-r*.34,r*1.04,r*.09);
+    if(ty==='brute'){g.save();g.translate(r*.9,r*.15);g.rotate(.5+w*.2);g.fillStyle='#7fd18a';g.fillRect(-r*.08,-r*.35,r*.16,r*.5);g.fillRect(-r*.04,-r*.5,r*.08,r*.16);g.restore()}
+    if(bs){
+      g.fillStyle=fl?'#fff':'#15151a';g.fillRect(-r*1.15,-r*1.05,r*1.1,r*.55);
+      g.fillStyle='#6a6a78';disc(g,-r*.85,-r*.78,r*.17);disc(g,-r*.4,-r*.78,r*.17);
+      g.strokeStyle='rgba(255,230,120,'+(.3+.3*Math.sin(t*8))+')';g.lineWidth=1.4;g.beginPath();g.arc(-r*.62,-r*.78,r*.9+Math.sin(t*8)*2,Math.PI*1.15,Math.PI*1.85);g.stroke();
+    }
+  }else if(f==='pol'){
+    g.fillStyle=wh||'#fff';poly(g,[[-r*.2,-r*.28],[r*.2,-r*.28],[0,-r*.05]]);g.fill();
+    g.fillStyle=wh||'#c0222e';poly(g,[[-r*.07,-r*.1],[r*.07,-r*.1],[r*.12,r*.5],[0,r*.7],[-r*.12,r*.5]]);g.fill();
+    g.fillStyle=fl?'#fff':(ty==='swarm'?'#8a8f99':'#aab0ba');g.beginPath();g.ellipse(0,hy-r*.3,r*.46,r*.22,0,Math.PI,0);g.fill();
+    if(ty!=='swarm'){g.fillStyle=fl?'#fff':'#6b4a2a';g.fillRect(r*.55,r*.35,r*.6,r*.42);g.fillStyle='#d9b45a';g.fillRect(r*.78,r*.33,r*.14,r*.06)}
+    if(bs){
+      g.strokeStyle='#e0c050';g.lineWidth=3;g.beginPath();g.moveTo(-r*.5,-r*.25);g.lineTo(r*.5,r*.75);g.stroke();
+      g.fillStyle='#e0c050';poly(g,[[-r*.38,hy-r*.35],[-r*.38,hy-r*.75],[-r*.19,hy-r*.55],[0,hy-r*.8],[r*.19,hy-r*.55],[r*.38,hy-r*.75],[r*.38,hy-r*.35]]);g.fill();
+    }
+    if(e.sh>0){g.strokeStyle='rgba(120,190,255,'+(.3+.5*Math.min(1,e.sh/(e.max*.2)))+')';g.lineWidth=2;g.beginPath();g.arc(0,r*.1,r*1.4,0,TAU);g.stroke()}
+  }else{
+    var hc=['#ff4d9a','#2bf0ff','#ffd24a','#8a4dff'][Math.floor(e.ph*4/TAU)%4];
+    g.fillStyle=fl?'#fff':hc;poly(g,[[-r*.4,hy-r*.25],[-r*.1,hy-r*.8],[r*.15,hy-r*.35],[r*.45,hy-r*.7],[r*.42,hy-r*.2]]);g.fill();
+    if(ty!=='swarm'){
+      g.save();g.translate(r*.75,-r*.35);g.rotate(-.25);g.fillStyle='#111';g.fillRect(-r*.18,-r*.35,r*.36,r*.62);g.fillStyle=fl?'#fff':'#6cc7ff';g.fillRect(-r*.13,-r*.3,r*.26,r*.5);g.restore();
+      if(Math.floor(t*4)%2===0){g.fillStyle='rgba(255,255,255,.85)';disc(g,r*.95,-r*.78,r*.14)}
+    }else{g.fillStyle='#ff4d6d';var hx=r*.1,hyy=-r*1.3;g.beginPath();g.moveTo(hx,hyy+r*.35);g.bezierCurveTo(hx-r*.5,hyy,hx-r*.2,hyy-r*.35,hx,hyy-r*.1);g.bezierCurveTo(hx+r*.2,hyy-r*.35,hx+r*.5,hyy,hx,hyy+r*.35);g.fill()}
+    if(ty==='brute'){g.strokeStyle=fl?'#fff':'#222';g.lineWidth=2.4;g.beginPath();g.arc(0,hy,r*.56,Math.PI*1.05,Math.PI*1.95);g.stroke();g.fillStyle='#222';disc(g,-r*.56,hy,r*.17);disc(g,r*.56,hy,r*.17)}
+    if(bs){g.strokeStyle='rgba(255,255,255,.9)';g.lineWidth=3;g.shadowColor='#ffffff';g.shadowBlur=10;g.beginPath();g.arc(0,hy,r*.95,0,TAU);g.stroke();g.shadowBlur=0}
+  }
+}
 function drawEnemy(g,e,t){
   var r=e.r,ph=t*(e.type==='runner'?9:e.type==='boss'?3:6)+e.ph,bob=Math.sin(ph)*1.4,fl=e.flash>0,i,k;
   var col=fl?'#ffffff':e.color;
   g.save();g.translate(e.x,e.y);
   g.fillStyle='rgba(0,0,0,.35)';g.beginPath();g.ellipse(0,r*.95,r*.95,r*.3,0,0,TAU);g.fill();
   g.translate(0,-bob-(e.type==='runner'||e.type==='boss'?r*.55:0));
-  if(e.type==='grunt'){
+  if(e.hum){
+    drawHum(g,e,t,col,fl,ph);
+  }else if(e.type==='grunt'||e.type==='shield'){
     g.strokeStyle=col;g.lineWidth=1.3;
     for(k=-1;k<=1;k+=2){g.beginPath();g.moveTo(k*3,-r+1);g.lineTo(k*5.5,-r-4+Math.sin(ph+k)*1);g.stroke();g.fillStyle=col;disc(g,k*5.5,-r-4+Math.sin(ph+k)*1,1.5)}
     g.fillStyle=col;g.beginPath();g.ellipse(0,0,r*.95,r,0,0,TAU);g.fill();
@@ -861,6 +991,7 @@ function drawEnemy(g,e,t){
     eyePair(g,0,-r*.5,r*.1,r*.1,r*.06,.4);
     for(i=0;i<6;i++){var a=-1.2+i*.48;g.fillStyle=((Math.floor(t*5)+i)%2)?'#ff4d4d':'#ffe9a0';disc(g,Math.sin(a)*r*1.2,Math.cos(a)*r*.18+r*.05,1.8)}
   }
+  if(e.type==='shield'){var sq=.5+.5*Math.sin(t*4+e.ph);g.fillStyle='rgba(110,200,255,'+(.08+.06*sq)+')';disc(g,0,0,r*1.55);g.strokeStyle='rgba(140,215,255,'+(.55+.3*sq)+')';g.lineWidth=1.6;g.beginPath();g.arc(0,0,r*1.55,0,TAU);g.stroke()}
   g.restore();
 }
 
@@ -1034,28 +1165,122 @@ function newRun(){
     mods:{hdmg:1+.08*ml('dmg')+.02*cl,hrate:1,hrange:0,hspeed:1,tdmg:1,trate:1,trange:1,gold:1,xp:1+.1*ml('xp'),crit:0,multi:0,cdr:1,aura:0,cost:1-.04*ml('cost'),nova:0,regen:0},
     items:[],skills:{q:0,e:0,r:0},cds:{q:0,e:0,r:0},buffT:0,rBuff:1,
     speed:1,sel:null,build:null,pending:[],rq:[],lvCards:null,lvOpen:false,lvKind:null,live:false,kills:0,score:0,rankPos:0,bosses:0,time:0,result:null,cards:null,earned:0,
-    shake:0,hit:0,banner:null,seed:Math.floor(Math.random()*1e9),cxGain:null,bg:null,log:logNew(cl+1),diff:D,did:DIFF[meta.diff]?meta.diff:'normal',hc:hc,tinfo:null,skin:null
+    shake:0,hit:0,banner:null,seed:Math.floor(Math.random()*1e9),cxGain:null,bg:null,log:logNew(cl+1),diff:D,did:DIFF[meta.diff]?meta.diff:'normal',hc:hc,tinfo:null,skin:null,fac:facOf(meta.fac)
   };
   for(k in cs.mods){if(ADDK[k])S.mods[k]+=cs.mods[k];else S.mods[k]*=cs.mods[k]}
   S.skills[cs.start]=1;
   var end=S.path.pts[S.path.pts.length-1];S.hero.x=end.x;S.hero.y=end.y;
   S.bg=makeBg();
   setTheme(cs);
+  S.tver=0;S.spec=genSpec();buildSyn();
   buildTowerInfo();initTowerBar();tbCache={};
 }
 
 /* ---------- Pomocnicze logiki ---------- */
-function towerCost(type){return Math.round(TOWER[type].cost*S.mods.cost*S.tinfo[type].tw.c)}
+function towerCount(type){var n=0;for(var i=0;i<S.towers.length;i++)if(S.towers[i].type===type)n++;return n}
+function towerCost(type){return Math.round(TOWER[type].cost*S.mods.cost*S.tinfo[type].tw.c*(1+TCOSTUP*towerCount(type)))}
 function towerAt(c,r){for(var i=0;i<S.towers.length;i++){if(S.towers[i].c===c&&S.towers[i].r===r)return S.towers[i]}return null}
-function validCell(c,r){return c>=0&&r>=0&&c<COLS&&r<ROWS&&!S.path.cells[c+','+r]&&!towerAt(c,r)}
+function validCell(c,r){return c>=0&&r>=0&&c<COLS&&r<ROWS&&!S.path.cells[c+','+r]&&S.spec[c+','+r]!=='rock'&&!towerAt(c,r)}
+/* Pola specjalne: losowo rozrzucone 1–3 kratki od ścieżki, z odstępem między sobą */
+function genSpec(){
+  var sp={},cells=[],c,r,dc,dr,i,j;
+  for(c=1;c<COLS-4;c++)for(r=1;r<ROWS-1;r++){
+    if(S.path.cells[c+','+r])continue;
+    var dm=9;
+    for(dc=-3;dc<=3;dc++)for(dr=-3;dr<=3;dr++)if(S.path.cells[(c+dc)+','+(r+dr)])dm=Math.min(dm,Math.max(Math.abs(dc),Math.abs(dr)));
+    if(dm>=1&&dm<=3)cells.push({c:c,r:r,d:dm});
+  }
+  for(i=cells.length-1;i>0;i--){j=Math.floor(Math.random()*(i+1));var tmp=cells[i];cells[i]=cells[j];cells[j]=tmp}
+  var kinds=['hill','hill','hill','power','power','mine','rock','rock','rock'],picked=[];
+  kinds.forEach(function(k){
+    for(var n=0;n<cells.length;n++){
+      var q=cells[n];if(q.used||(k==='rock'&&q.d>2))continue;
+      var far=true;
+      for(var p=0;p<picked.length;p++)if(Math.max(Math.abs(picked[p].c-q.c),Math.abs(picked[p].r-q.r))<3){far=false;break}
+      if(!far)continue;
+      q.used=true;picked.push(q);sp[q.c+','+q.r]=k;break;
+    }
+  });
+  return sp;
+}
+/* Mapa synergii dla wybranego zamku: S.synm['typ<sąsiad'] = lista efektów */
+function buildSyn(){
+  var mp={};
+  function add(to,from,e,n){(mp[to+'<'+from]=mp[to+'<'+from]||[]).push({e:e,n:n})}
+  SYNU.concat(CSYN[S.castle.id]||[]).forEach(function(p){
+    if(p[2])add(p[0],p[1],p[2],p[4]);
+    if(p[3])add(p[1],p[0],p[3],p[4]);
+  });
+  S.synm=mp;
+}
+function effText(e){
+  var p=[];
+  function pc(v){return Math.round(v*100)+'%'}
+  if(e.dmg)p.push('+'+pc(e.dmg)+' obr.');
+  if(e.rate)p.push('+'+pc(e.rate)+' szybk.');
+  if(e.range)p.push('+'+pc(e.range)+' zasięgu');
+  if(e.splash)p.push('+'+pc(e.splash)+' wybuchu');
+  if(e.chain)p.push('+'+e.chain+' cel łańcucha');
+  if(e.crit)p.push('+'+pc(e.crit)+' krytyka');
+  if(e.slowed)p.push('+'+pc(e.slowed)+' obr. w spowolnionych');
+  if(e.pois)p.push('+'+pc(e.pois)+' obr. w zatrutych');
+  if(e.tox)p.push('pioruny zatruwają');
+  return p.join(', ');
+}
+/* Sąsiedztwo wieży typu `type` na polu (c,r). `self` to istniejąca wieża (null = podgląd budowy). Wynik jest liczony od nowa tylko po zmianie układu wież (S.tver). */
+function synCalc(type,c,r,self){
+  var o={same:0,kinds:0,dm:1,rt:1,rg:1,sp:1,ch:0,cr:0,sb:0,pb:0,tox:0,uf:1,pairs:[],links:[],sameN:[],spot:null},seen={},idx=0,i,n,e,si=self?S.towers.indexOf(self):S.towers.length;
+  for(i=0;i<S.towers.length;i++){
+    n=S.towers[i];if(n===self)continue;
+    if(n.type===type&&i<si)idx++;
+    if(Math.abs(n.c-c)<=1&&Math.abs(n.r-r)<=1){
+      if(n.type===type){o.same++;o.sameN.push(n)}
+      else{
+        if(!seen[n.type]){seen[n.type]=1;o.kinds++}
+        var lst=S.synm[type+'<'+n.type];
+        if(lst){
+          o.links.push(n);
+          lst.forEach(function(x){
+            e=x.e;
+            if(e.dmg)o.dm*=1+e.dmg;if(e.rate)o.rt*=1+e.rate;if(e.range)o.rg*=1+e.range;if(e.splash)o.sp*=1+e.splash;
+            if(e.chain)o.ch+=e.chain;if(e.crit)o.cr+=e.crit;if(e.slowed)o.sb+=e.slowed;if(e.pois)o.pb+=e.pois;if(e.tox)o.tox=1;
+            o.pairs.push(x.n+': '+effText(e));
+          });
+        }
+      }
+    }
+  }
+  o.rt*=1-SAMEPEN*Math.min(o.same,SAMEMAX);
+  o.dm*=1+MIXBON*Math.min(o.kinds,MIXMAX);
+  o.cr=Math.min(.75,o.cr);
+  o.uf=Math.max(.5,1-TUPDEC*idx);
+  var sk=S.spec[c+','+r];
+  if(sk==='hill'){o.rg*=1.2;o.spot=SPEC.hill}
+  else if(sk==='power'){o.rt*=1.15;o.spot=SPEC.power}
+  else if(sk==='mine')o.spot=SPEC.mine;
+  return o;
+}
+function synOf(t){
+  if(t.sv!==S.tver||!t.sy){t.sy=synCalc(t.type,t.c,t.r,t);t.sv=S.tver}
+  return t.sy;
+}
+function synText(o){
+  var p=[];
+  if(o.same)p.push('−'+Math.round(SAMEPEN*Math.min(o.same,SAMEMAX)*100)+'% szybk. ('+o.same+'× ten sam typ obok)');
+  if(o.kinds)p.push('+'+Math.round(MIXBON*Math.min(o.kinds,MIXMAX)*100)+'% obr. ('+o.kinds+' inne typy obok)');
+  o.pairs.forEach(function(x){p.push(x)});
+  if(o.spot)p.push(o.spot.n+': '+o.spot.d);
+  return p;
+}
 function tstat(t){
-  var b=TOWER[t.type],L=S.tup[t.type]-1,m=S.mods;
-  var buff=S.buffT>0?S.rBuff:1,aura=1;
+  var b=TOWER[t.type],L=S.tup[t.type]-1,m=S.mods,sy=synOf(t);
+  var buff=S.buffT>0?S.rBuff:1,aura=1,Lf=L*sy.uf;
   if(m.aura&&dist(t.x,t.y,S.hero.x,S.hero.y)<170)aura=1+m.aura;
-  var tw=tinfo(t.type).tw,dm=(1+.3*L)*m.tdmg*tw.d;
-  return {dmg:b.dmg*dm,rate:b.rate*(1+.08*L)*m.trate*buff*aura*tw.r,range:(b.range+7*L)*m.trange*tw.g,
-    splash:b.splash?b.splash+4*L:0,slow:b.slow?Math.min(.8,b.slow+.04*L):0,slowT:b.slowT,
-    pdps:b.pdps?b.pdps*dm:0,pT:b.pT?b.pT+.4*L:0,chain:b.chain?b.chain+Math.floor(L/2):0,color:tinfo(t.type).col,proj:b.proj,kind:b.kind};
+  var tw=tinfo(t.type).tw,dm=(1+.3*Lf)*m.tdmg*tw.d*sy.dm;
+  return {dmg:b.dmg*dm,rate:b.rate*(1+.08*Lf)*m.trate*buff*aura*tw.r*sy.rt,range:(b.range+7*Lf)*m.trange*tw.g*sy.rg,
+    splash:b.splash?(b.splash+4*Lf)*sy.sp:0,slow:b.slow?Math.min(.8,b.slow+.04*Lf):0,slowT:b.slowT,
+    pdps:b.pdps?b.pdps*dm:0,pT:b.pT?b.pT+.4*Lf:0,chain:b.chain?b.chain+Math.floor(L/2)+sy.ch:0,color:tinfo(t.type).col,proj:b.proj,kind:b.kind,
+    crit:sy.cr,sb:sy.sb,pb:sy.pb,tox:sy.tox};
 }
 function hstat(){
   var m=S.mods;
@@ -1066,11 +1291,12 @@ function cdOf(k){return CD[k](S.skills[k])*S.mods.cdr}
 function sparks(x,y,color,n){for(var i=0;i<n;i++){var a=rnd(0,TAU);S.fx.push({k:'p',x:x,y:y,vx:Math.cos(a)*rnd(20,70),vy:Math.sin(a)*rnd(20,70),t:0,life:.3,color:color})}}
 function tryBuild(c,r){
   if(!S.build||!validCell(c,r))return;
+  if(towerCount(S.build)>=TLIMIT)return;
   var cost=towerCost(S.build);
   if(S.gold<cost)return;
   S.gold-=cost;
-  var t={type:S.build,c:c,r:r,x:c*T+T/2,y:r*T+T/2,cd:rnd(0,.3),spent:cost,ang:-Math.PI/2,rec:0,ramp:0,lt:null};
-  S.towers.push(t);S.sel=t;S.log.bd.push([S.wave,t.type,c,r,0]);
+  var t={type:S.build,c:c,r:r,x:c*T+T/2,y:r*T+T/2,cd:rnd(0,.3),spent:cost,ang:-Math.PI/2,rec:0,ramp:0,lt:null,sv:-1,sy:null};
+  S.towers.push(t);S.tver++;S.sel=t;S.log.bd.push([S.wave,t.type,c,r,0]);
   S.fx.push({k:'ring',x:t.x,y:t.y,r:4,max:24,t:0,life:.3,color:tinfo(t.type).col});
   sparks(t.x,t.y,tinfo(t.type).col,6);
 }
@@ -1078,7 +1304,7 @@ function sellTower(t){
   if(!t)return;
   S.gold+=Math.floor(t.spent*.7);S.log.bd.push([S.wave,t.type,t.c,t.r,1]);
   sparks(t.x,t.y,'#8c9ba7',6);
-  S.towers=S.towers.filter(function(x){return x!==t});
+  S.towers=S.towers.filter(function(x){return x!==t});S.tver++;
   if(S.sel===t)S.sel=null;
 }
 
@@ -1090,6 +1316,7 @@ function genWave(w){
     if(w>=2&&r<.25)type='runner';
     else if(w>=4&&r<.4)type='brute';
     else if(w>=3&&r<.55)type='swarm';
+    else if(w>=6&&r<.7)type='shield';
     if(type==='swarm'){for(var k=0;k<4;k++)q.push({type:'swarm',gap:.3});q.push({type:'grunt',gap:.8})}
     else q.push({type:type,gap:type==='runner'?.55:.9});
   }
@@ -1099,24 +1326,31 @@ function genWave(w){
 function startWave(){
   if(S.modal||S.phase!=='build')return;
   S.wave++;S.phase='wave';S.spawnQ=genWave(S.wave);S.spawnT=.8;S.sel=null;
-  var boss=S.wave%5===0,bb=BOSS[Math.min(BOSS.length,Math.max(1,Math.round(S.wave/5)))-1];
+  var boss=S.wave%5===0,bb=S.fac.bd[Math.min(BOSS.length,Math.max(1,Math.round(S.wave/5)))-1];
   logWaveStart();
   S.banner={text:boss?'Fala '+S.wave+' · '+bb.n+' nadlatuje!':'Fala '+S.wave,t:0,life:1.7,boss:boss};
 }
-function spawn(type){
-  var d=ENEMY[type],w=S.wave,bd=null;
-  var hpMul=(1+(w-1)*.55+Math.pow(w,1.7)*.05)*S.diff.hp;
-  if(type==='boss'){hpMul*=1+(w/5-1)*.6;bd=BOSS[Math.min(BOSS.length,Math.max(1,Math.round(w/5)))-1];d=bd}
-  var p=pathPos(0);
-  S.enemies.push({bid:bd?bd.id:null,bn:bd?bd.n:null,dg:0,type:type,x:p.x,y:p.y,d:0,hp:d.hp*hpMul,max:d.hp*hpMul,spd:d.spd*S.diff.spd,r:d.r,gold:d.gold,xp:d.xp,pts:d.pts||PTS[type]||10,dmg:d.dmg,color:d.color,sl:1,slowT:0,poisT:0,pd:0,flash:0,dead:false,ph:rnd(0,TAU),acc:0,tn:0});
-  S.fx.push({k:'ring',x:p.x,y:p.y,r:3,max:20,t:0,life:.3,color:'#7bff7b'});
+/* d0 i child: wrogowie wyrzuceni przez Streamera (frakcja infl) pojawiają się w miejscu jego śmierci i nie rozpadają się dalej. */
+function spawn(type,d0,child){
+  var d=ENEMY[type],w=S.wave,bd=null,F=S.fac,fo=F.e&&F.e[type];
+  var hpMul=(1+(w-1)*.55+Math.pow(w,1.7)*.05)*S.diff.hp*(S.hc?1:F.hp);
+  if(type==='boss'){hpMul*=1+(w/5-1)*.6;bd=F.bd[Math.min(BOSS.length,Math.max(1,Math.round(w/5)))-1];d=bd}
+  var p=pathPos(d0||0),hp=d.hp*hpMul;
+  S.enemies.push({bid:bd?bd.id:null,bn:bd?bd.n:null,fid:F.id,hum:F.id!=='aliens',dg:0,type:type,x:p.x,y:p.y,d:d0||0,hp:hp,max:hp,spd:d.spd*S.diff.spd,r:d.r,gold:d.gold,xp:d.xp,pts:d.pts||PTS[type]||10,dmg:d.dmg,color:fo?fo.c:d.color,arm:d.arm?d.arm+.35*w:0,rs:d.rs||null,
+    hl:F.mech==='heal'&&type==='brute',rg:F.mech==='rage',sh:F.mech==='shield'&&type!=='boss'?hp*.2:0,sp:F.mech==='split'&&type==='brute'&&!child,
+    sl:1,slowT:0,poisT:0,pd:0,flash:0,dead:false,ph:rnd(0,TAU),acc:0,tn:0});
+  S.fx.push({k:'ring',x:p.x,y:p.y,r:3,max:20,t:0,life:.3,color:F.id==='aliens'?'#7bff7b':(fo?fo.c:d.color)});
 }
 
 /* ---------- Walka ---------- */
-function dealDamage(e,dmg,quiet,crit){
+/* Rodzaje obrażeń (k): 'splash' wybuchy, 'energy' Tesla i Laser, 'dot' trucizna (ignoruje pancerz). Pancerz odejmuje stałą wartość od każdego trafienia (min. 35%). */
+function dealDamage(e,dmg,quiet,crit,k){
   if(e.dead)return;
   if(e.inv>0)return;
-  e.hp-=dmg;e.flash=.08;
+  if(k){if(e.rs&&e.rs[k])dmg*=e.rs[k]}
+  if(e.arm&&k!=='dot')dmg=Math.max(dmg*.35,dmg-e.arm);
+  if(e.sh>0){var ab=Math.min(e.sh,dmg);e.sh-=ab;dmg-=ab;e.flash=.08}
+  e.hp-=dmg;if(dmg>0)e.flash=.08;
   if(!quiet){
     e.acc+=dmg;
     if(e.tn<=0&&e.acc>=1&&S.fx.length<260){
@@ -1139,6 +1373,7 @@ function kill(e){
   if(e.type==='boss'){S.bosses++;S.shake=Math.max(S.shake,.3);S.fx.push({k:'ring',x:e.x,y:e.y,r:5,max:80,t:0,life:.5,color:e.color})}
   S.gold+=Math.round(e.gold*S.mods.gold);
   gainXp(e.xp*S.mods.xp*XPS);
+  if(e.sp)for(var q=0;q<3;q++)spawn('swarm',Math.max(0,e.d-q*10),true);
   for(var i=0;i<(e.type==='boss'?20:6);i++){var a=rnd(0,TAU);S.fx.push({k:'p',x:e.x,y:e.y,vx:Math.cos(a)*rnd(30,100),vy:Math.sin(a)*rnd(30,100),t:0,life:.45,color:i%3?e.color:'#e9ffe0'})}
 }
 function gainXp(v){
@@ -1156,19 +1391,31 @@ function nearest(x,y,range,skip){
   }
   return best;
 }
-function furthest(x,y,range){
+function furthest(x,y,range,minR){
   var best=null,bp=-1;
   for(var i=0;i<S.enemies.length;i++){
     var e=S.enemies[i];if(e.dead)continue;
-    if(dist(x,y,e.x,e.y)<=range+e.r&&e.d>bp){bp=e.d;best=e}
+    var dd=dist(x,y,e.x,e.y);
+    if(dd<=range+e.r&&(!minR||dd>=minR)&&e.d>bp){bp=e.d;best=e}
   }
   return best;
 }
-function explode(x,y,r,dmg,color){
+/* Snajper celuje w najmocniejszego wroga (najwięcej HP) w zasięgu */
+function strongest(x,y,range){
+  var best=null,bh=-1;
+  for(var i=0;i<S.enemies.length;i++){
+    var e=S.enemies[i];if(e.dead)continue;
+    if(dist(x,y,e.x,e.y)<=range+e.r&&e.hp>bh){bh=e.hp;best=e}
+  }
+  return best;
+}
+/* Mnożnik z synergii: obrażenia większe w spowolnionych (sb) i zatrutych (pb) celach */
+function synMul(e,sb,pb){var m=1;if(sb&&e.slowT>0)m*=1+sb;if(pb&&e.poisT>0)m*=1+pb;return m}
+function explode(x,y,r,dmg,color,sb,pb){
   S.fx.push({k:'ring',x:x,y:y,r:4,max:r,t:0,life:.28,color:color,fill:true});
   for(var j=0;j<3;j++)S.fx.push({k:'smoke',x:x+rnd(-6,6),y:y+rnd(-6,6),t:0,life:.5,r:5,max:14+r*.2});
   if(r>60)S.shake=Math.max(S.shake,.1);
-  for(var i=0;i<S.enemies.length;i++){var e=S.enemies[i];if(!e.dead&&dist(x,y,e.x,e.y)<=r+e.r)dealDamage(e,dmg)}
+  for(var i=0;i<S.enemies.length;i++){var e=S.enemies[i];if(!e.dead&&dist(x,y,e.x,e.y)<=r+e.r)dealDamage(e,dmg*synMul(e,sb,pb),false,false,'splash')}
 }
 function critHp(){return S.baseHp>0&&(S.hc||S.baseHp<=1||S.baseHp/S.baseMax<=.05)}
 function novaRad(){return 85+12*S.skills.q+(S.mods.nova?30:0)}
@@ -1191,23 +1438,26 @@ function castR(){
 }
 
 function fireTower(t,st,target){
-  var i,b=TOWER[t.type];
+  var i,b=TOWER[t.type],cm=(st.crit&&Math.random()<st.crit)?2:1,dmg=st.dmg*cm;
   t.ang=Math.atan2(target.y-t.y,target.x-t.x);t.rec=.16;
   if(st.kind==='bolt'){
     var list=[target],cur=target,pts=[{x:t.x,y:t.y-6},{x:target.x,y:target.y}];
     for(i=0;i<st.chain;i++){var nx=nearest(cur.x,cur.y,80,list);if(!nx)break;list.push(nx);pts.push({x:nx.x,y:nx.y});cur=nx}
-    for(i=0;i<list.length;i++)dealDamage(list[i],st.dmg*Math.pow(.75,i));
+    for(i=0;i<list.length;i++){
+      dealDamage(list[i],dmg*Math.pow(.75,i)*synMul(list[i],st.sb,st.pb),false,cm>1,'energy');
+      if(st.tox){list[i].poisT=Math.max(list[i].poisT,2.5);list[i].pd=Math.max(list[i].pd,10)}
+    }
     S.fx.push({k:'bolt',pts:pts,t:0,life:.2,color:st.color});
   }else if(st.kind==='beam'){
     if(t.lt===target)t.ramp=Math.min(2,t.ramp+.1);else{t.lt=target;t.ramp=0}
-    dealDamage(target,st.dmg*(1+t.ramp)*(target.bid==='hunter'?1.8:1),true);
+    dealDamage(target,dmg*(1+t.ramp)*(target.bid==='hunter'?1.8:1)*synMul(target,st.sb,st.pb),true,false,'energy');
     S.fx.push({k:'beam',x1:t.x+Math.cos(t.ang)*10,y1:t.y+Math.sin(t.ang)*10,x2:target.x,y2:target.y,t:0,life:.1,color:st.color,w:1.4+t.ramp});
   }else if(st.kind==='mortar'){
     var dd=dist(t.x,t.y,target.x,target.y),dur=Math.max(.6,dd/190);
     var pp=pathPos(Math.min(S.path.len,target.d+target.spd*dur*.85));
-    S.shots.push({x:t.x,y:t.y,sx:t.x,sy:t.y,tx:pp.x,ty:pp.y,arc:true,el:0,dur:dur,p:0,dmg:st.dmg,splash:st.splash,color:st.color,kind:'mortar',r:4});
+    S.shots.push({x:t.x,y:t.y,sx:t.x,sy:t.y,tx:pp.x,ty:pp.y,arc:true,el:0,dur:dur,p:0,dmg:dmg,splash:st.splash,sb:st.sb,pb:st.pb,color:st.color,kind:'mortar',r:4});
   }else{
-    S.shots.push({x:t.x,y:t.y,tg:target,dmg:st.dmg,speed:st.proj,color:st.color,kind:st.kind,r:st.kind==='ball'?4:2.5,splash:st.splash,slow:st.slow,slowT:st.slowT,pd:st.pdps,pT:st.pT,trail:(st.kind==='ball'||st.kind==='snipe')?[]:null,a:t.ang});
+    S.shots.push({x:t.x,y:t.y,tg:target,dmg:dmg,crit:cm>1,sb:st.sb,pb:st.pb,speed:st.proj,color:st.color,kind:st.kind,r:st.kind==='ball'?4:2.5,splash:st.splash,slow:st.slow,slowT:st.slowT,pd:st.pdps,pT:st.pT,trail:(st.kind==='ball'||st.kind==='snipe')?[]:null,a:t.ang});
   }
 }
 
@@ -1243,7 +1493,9 @@ function update(dt){
     if(e.dg>0)e.dg-=dt;
     if(e.flash>0)e.flash-=dt;
     if(e.tn>0)e.tn-=dt;
-    if(e.poisT>0){e.poisT-=dt;dealDamage(e,e.pd*dt,true);if(e.dead)continue}
+    if(e.poisT>0){e.poisT-=dt;dealDamage(e,e.pd*dt,true,false,'dot');if(e.dead)continue}
+    if(e.rg&&e.hp<e.max*.5)m*=1.4;
+    if(e.hl){for(var hj=0;hj<S.enemies.length;hj++){var ho=S.enemies[hj];if(ho!==e&&!ho.dead&&ho.hp<ho.max&&dist(e.x,e.y,ho.x,ho.y)<=HEAL_R)ho.hp=Math.min(ho.max,ho.hp+ho.max*.035*dt)}}
     e.d+=e.spd*m*dt;
     if(e.d>=S.path.len){
       e.dead=true;S.log.lk++;S.baseHp-=e.dmg;S.shake=Math.max(S.shake,.25);S.hit=.4;
@@ -1281,7 +1533,7 @@ function update(dt){
     t.sul=false;
     for(j=0;j<S.enemies.length;j++){var se=S.enemies[j];if(se.bid==='sultan'&&!se.dead&&dist(t.x,t.y,se.x,se.y)<=SULTAN_R){t.sul=true;break}}
     if(t.cd<=0){
-      var target=furthest(t.x,t.y,st.range);
+      var target=t.type==='sniper'?strongest(t.x,t.y,st.range):furthest(t.x,t.y,st.range,t.type==='mortar'?MORTAR_MIN:0);
       if(target){fireTower(t,st,target);t.cd=1/(st.rate*(t.sul?.55:1))}
       else{t.cd=0;if(st.kind==='beam')t.ramp=Math.max(0,t.ramp-dt)}
     }
@@ -1293,11 +1545,11 @@ function update(dt){
     if(s.arc){
       s.el+=dt;s.p=Math.min(1,s.el/s.dur);
       s.x=s.sx+(s.tx-s.sx)*s.p;s.y=s.sy+(s.ty-s.sy)*s.p;
-      if(s.p>=1){s.done=true;explode(s.tx,s.ty,s.splash,s.dmg,s.color)}
+      if(s.p>=1){s.done=true;explode(s.tx,s.ty,s.splash,s.dmg,s.color,s.sb,s.pb)}
       continue;
     }
     if(s.tg){
-      if(s.tg.dead){if(s.splash)explode(s.x,s.y,s.splash,s.dmg,s.color);s.done=true;continue}
+      if(s.tg.dead){if(s.splash)explode(s.x,s.y,s.splash,s.dmg,s.color,s.sb,s.pb);s.done=true;continue}
       s.tx=s.tg.x;s.ty=s.tg.y;
     }
     var ddx=s.tx-s.x,ddy=s.ty-s.y,dl=Math.hypot(ddx,ddy),stp=s.speed*dt;
@@ -1306,14 +1558,14 @@ function update(dt){
     if(dl>0.001)s.a=Math.atan2(ddy,ddx);
     if(dl<=stp+(s.tg?s.tg.r:0)){
       s.done=true;
-      if(s.splash)explode(s.tx,s.ty,s.splash,s.dmg,s.color);
+      if(s.splash)explode(s.tx,s.ty,s.splash,s.dmg,s.color,s.sb,s.pb);
       else if(s.tg){
         if(s.tg.bid==='hunter'&&Math.random()<(s.tg.slowT>0?.2:.45)){
           s.tg.dg=.35;
           S.fx.push({k:'txt',x:s.tg.x,y:s.tg.y-s.tg.r-6,vy:-26,t:0,life:.6,text:'UNIK!',color:'#ff9ab0',size:11});
           continue;
         }
-        dealDamage(s.tg,s.dmg,false,s.crit);
+        dealDamage(s.tg,s.dmg*synMul(s.tg,s.sb,s.pb),false,s.crit);
         if(s.slow){s.tg.sl=1-Math.min(.85,s.slow*(s.tg.bid==='hunter'?1.6:1));s.tg.slowT=s.slowT}
         if(s.pd){s.tg.poisT=s.pT;s.tg.pd=Math.max(s.tg.pd,s.pd)}
         sparks(s.tx,s.ty,s.color,3);
@@ -1330,7 +1582,8 @@ function update(dt){
 
   if(S.baseHp<=0){endRun(false);return}
   if(S.phase==='wave'&&!S.spawnQ.length&&!S.enemies.length){
-    S.gold+=20+5*S.wave;S.phase='build';S.shots=[];logWaveEnd();
+    var mg=0;S.towers.forEach(function(tw){if(S.spec[tw.c+','+tw.r]==='mine')mg+=6});
+    S.gold+=20+5*S.wave+mg;S.phase='build';S.shots=[];logWaveEnd();
     if(S.mods.regen)S.baseHp=Math.min(S.baseMax,S.baseHp+S.mods.regen);
     if(S.wave>=MAXWAVE){endRun(true);return}
     S.rq.push({k:'wave',w:S.wave});
@@ -1468,6 +1721,18 @@ function endRun(win){
 }
 
 /* ---------- Rysowanie sceny ---------- */
+/* Dymek z podpowiedzią na planszy (linie tekstu nad punktem x,y) */
+function drawTip(g,x,y,lines){
+  if(!lines||!lines.length)lines=['Brak sąsiadów'];
+  g.save();g.font='600 10px "Chakra Petch",sans-serif';g.textAlign='left';g.textBaseline='middle';
+  var w=0,i,lh=13;
+  for(i=0;i<lines.length;i++)w=Math.max(w,g.measureText(lines[i]).width);
+  w+=10;var h=lines.length*lh+6,bx=clamp(x-w/2,2,CW-w-2),by=clamp(y-h,2,CH-h-2);
+  g.fillStyle='rgba(10,14,18,.92)';rr(g,bx,by,w,h,5);g.fill();g.strokeStyle='rgba(255,214,90,.7)';g.lineWidth=1;rr(g,bx,by,w,h,5);g.stroke();
+  g.fillStyle='#e8eef2';
+  for(i=0;i<lines.length;i++)g.fillText(lines[i],bx+5,by+3+lh*(i+.5));
+  g.restore();
+}
 function draw(){
   var i,t,g=ctx;
   g.setTransform(DPR,0,0,DPR,0,0);
@@ -1491,6 +1756,15 @@ function draw(){
   for(i=0;i<3;i++){g.beginPath();g.arc(0,0,8+i*4,clock*(2+i*.7)+i*2,clock*(2+i*.7)+i*2+2.2);g.stroke()}
   g.restore();
 
+  // pola specjalne
+  for(var spk in S.spec){
+    var kd=S.spec[spk],xy=spk.split(','),px=+xy[0]*T+T/2,py=+xy[1]*T+T/2;
+    if(kd==='hill'){g.fillStyle='rgba(214,184,120,.28)';disc(g,px,py,13);g.fillStyle='rgba(214,184,120,.75)';poly(g,[[px-9,py+6],[px,py-8],[px+9,py+6]]);g.fill();g.fillStyle='rgba(255,255,255,.35)';poly(g,[[px-2,py-3],[px,py-8],[px+2,py-3]]);g.fill()}
+    else if(kd==='power'){var pw=.5+.5*Math.sin(clock*3);g.fillStyle='rgba(255,210,63,'+(.12+.1*pw)+')';disc(g,px,py,14);g.fillStyle='rgba(255,210,63,.85)';poly(g,[[px,py-8],[px+6,py],[px,py+8],[px-6,py]]);g.fill()}
+    else if(kd==='mine'){g.fillStyle='rgba(123,224,195,.22)';disc(g,px,py,13);g.fillStyle='#7be0c3';disc(g,px,py,6);g.fillStyle='#0d1217';g.font='700 9px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('$',px,py+.5)}
+    else{g.fillStyle='#6b7680';poly(g,[[px-11,py+8],[px-8,py-5],[px,py-10],[px+9,py-4],[px+12,py+8]]);g.fill();g.fillStyle='rgba(255,255,255,.18)';poly(g,[[px-8,py-5],[px,py-10],[px+2,py-2]]);g.fill()}
+  }
+
   // mroźna aura zamku
   if(S.skills.e){
     var pu=.5+.5*Math.sin(clock*2);
@@ -1507,8 +1781,13 @@ function draw(){
       g.strokeStyle='rgba(232,238,242,.35)';g.lineWidth=1;g.beginPath();
       g.arc(hover.c*T+T/2,hover.r*T+T/2,bd.range*S.mods.trange,0,TAU);g.stroke();
       g.globalAlpha=.55;drawTower(g,S.build,hover.c*T+T/2,hover.r*T+T/2,1.22,clock,-Math.PI/2,0,S.tup[S.build],0,false,S.skin[S.build]);g.globalAlpha=1;
+      var pv=synCalc(S.build,hover.c,hover.r,null),pvx=hover.c*T+T/2,pvy=hover.r*T+T/2;
+      pv.sameN.forEach(function(n){g.strokeStyle='rgba(255,107,107,.9)';g.lineWidth=2;g.setLineDash([4,3]);g.beginPath();g.moveTo(pvx,pvy);g.lineTo(n.x,n.y);g.stroke();g.setLineDash([])});
+      pv.links.forEach(function(n){g.strokeStyle='rgba(95,211,141,.95)';g.lineWidth=2.5;g.beginPath();g.moveTo(pvx,pvy);g.lineTo(n.x,n.y);g.stroke()});
+      drawTip(g,pvx,pvy-T,synText(pv));
     }
   }
+  if(hover&&!S.modal&&S.spec[hover.c+','+hover.r]&&!S.build){var hs2=SPEC[S.spec[hover.c+','+hover.r]];drawTip(g,hover.c*T+T/2,hover.r*T-4,[hs2.n+': '+hs2.d])}
 
   // wieże
   for(i=0;i<S.towers.length;i++){
@@ -1518,6 +1797,17 @@ function draw(){
       g.strokeStyle='#ffb23e';g.strokeRect(t.c*T+1.5,t.r*T+1.5,T-3,T-3)}
     drawTower(g,t.type,t.x,t.y,1.22,clock,t.ang,t.rec,S.tup[t.type],t.ramp,S.buffT>0,S.skin[t.type]);
     if(t.sul){g.strokeStyle='rgba(190,120,255,'+(.5+.3*Math.sin(clock*8))+')';g.lineWidth=2;g.beginPath();g.arc(t.x,t.y,19,0,TAU);g.stroke();g.fillStyle='rgba(190,120,255,.9)';g.font='700 10px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('\u29D7',t.x+13,t.y-15)}
+  }
+
+  // po\u0142\u0105czenia synergii na wierzchu wie\u017C: z\u0142ote kreski mi\u0119dzy s\u0105siadami z premi\u0105, czerwone przerywane do tego samego typu (zaznaczona wie\u017Ca)
+  for(i=0;i<S.towers.length;i++){
+    t=S.towers[i];var sy0=synOf(t),on=S.sel===t;
+    for(var li=0;li<sy0.links.length;li++){
+      var ln=sy0.links[li],mx=(t.x+ln.x)/2,my=(t.y+ln.y)/2;
+      g.strokeStyle='rgba(255,214,90,'+(on?1:.75)+')';g.lineWidth=on?3.5:2.5;g.beginPath();g.moveTo(t.x+(ln.x-t.x)*.2,t.y+(ln.y-t.y)*.2);g.lineTo(t.x+(ln.x-t.x)*.5,t.y+(ln.y-t.y)*.5);g.stroke();
+      g.fillStyle='#ffd65a';disc(g,mx,my,on?3:2.2);
+    }
+    if(on){for(var si2=0;si2<sy0.sameN.length;si2++){var sn=sy0.sameN[si2];g.strokeStyle='rgba(255,107,107,.95)';g.lineWidth=2.5;g.setLineDash([4,3]);g.beginPath();g.moveTo(t.x,t.y);g.lineTo(sn.x,sn.y);g.stroke();g.setLineDash([])}}
   }
 
   // wrogowie
@@ -1622,9 +1912,9 @@ function initTowerBar(){
 }
 function updateTowerBar(){
   TKEYS.forEach(function(k){
-    var cost=towerCost(k),cls='tb'+(S.build===k?' on':'')+(S.gold<cost?' off':'');
-    var key=cls+'|'+cost;
-    if(tbCache[k]!==key){tbCache[k]=key;$('tb-'+k).className=cls;$('tc-'+k).innerHTML=cost+' zł<span class="role"> · '+ROLE[k]+'</span>'}
+    var cost=towerCost(k),cn=towerCount(k),cls='tb'+(S.build===k?' on':'')+(S.gold<cost||cn>=TLIMIT?' off':'');
+    var key=cls+'|'+cost+'|'+cn;
+    if(tbCache[k]!==key){tbCache[k]=key;$('tb-'+k).className=cls;$('tc-'+k).innerHTML=(cn>=TLIMIT?'limit':cost+' zł')+' · '+cn+'/'+TLIMIT+'<span class="role"> · '+ROLE[k]+'</span>'}
   });
 }
 function ui(){
@@ -1656,10 +1946,11 @@ function ui(){
   var hm0=!!S.modal;if(cache.inmodal!==hm0){cache.inmodal=hm0;$('app').classList.toggle('inmodal',hm0)}
   var hs0=!!S.sel;if(cache.hassel!==hs0){cache.hassel=hs0;$('app').classList.toggle('hassel',hs0)}
   if(S.sel){
-    var t=S.sel,st=tstat(t),bd=tinfo(t.type),L=S.tup[t.type];
-    setHTML('sel','<span><b style="color:'+bd.col+'">'+bd.n+'</b> ('+ROLE[t.type]+'; '+twText(bd.tw)+') · ulepszenia '+L+'/5</span><span>Obr. '+st.dmg.toFixed(st.dmg<10?1:0)+' · Szybk. '+st.rate.toFixed(2)+'/s · Zasięg '+Math.round(st.range)+'</span>'+
+    var t=S.sel,st=tstat(t),bd=tinfo(t.type),L=S.tup[t.type],sy=synOf(t),sx=synText(sy);
+    setHTML('sel','<span><b style="color:'+bd.col+'">'+bd.n+'</b> ('+ROLE[t.type]+'; '+twText(bd.tw)+') · ulepszenia '+L+'/5'+(sy.uf<1?' (ta kopia: '+Math.round(sy.uf*100)+'% siły ulepszeń)':'')+'</span><span>Obr. '+st.dmg.toFixed(st.dmg<10?1:0)+' · Szybk. '+st.rate.toFixed(2)+'/s · Zasięg '+Math.round(st.range)+'</span>'+
+      '<span class="syn">Sąsiedztwo: '+(sx.length?sx.join(' · '):'brak, postaw obok inny typ wieży')+'</span>'+
       '<button type="button" class="btn sm ghost" data-act="sell">Sprzedaj +'+Math.floor(t.spent*.7)+' zł</button>');
-  }else setHTML('sel','<span class="hint">Wybierz wieżę (1–8) i kliknij pole. Kliknij wieżę, aby zobaczyć jej dane lub ją sprzedać. Ulepszenia wież zdobywasz po falach. Spacja startuje falę.</span>');
+  }else setHTML('sel','<span class="hint">'+(window.matchMedia&&matchMedia('(pointer:coarse)').matches?'Przytrzymaj wieżę na pasku i przeciągnij ją na pole planszy.':'Wybierz wieżę (1–8) i kliknij pole.')+' Wieże różnych typów obok siebie wzmacniają się, a te same typy osłabiają. Limit '+TLIMIT+' sztuk na typ, każda kopia droższa o '+Math.round(TCOSTUP*100)+'%. Spacja startuje falę.</span>');
   var slots='';
   for(var i=0;i<MAXITEMS;i++){
     var id=S.items[i],c=id&&CARDS.filter(function(x){return x.id===id})[0];
@@ -1681,6 +1972,11 @@ function diffHTML(){
     return '<button type="button" class="df'+(meta.diff===id?' sel':'')+(id==='hardcore'?' hc':'')+'" data-act="diff" data-id="'+id+'">'+DIFF[id].n+'</button>';
   }).join('')+'</div><p>'+(DIFF[meta.diff]||DIFF.normal).d+'</p>';
 }
+function facHTML(){
+  return '<h3>Wrogowie</h3><div class="diffs">'+FACIDS.map(function(id){
+    return '<button type="button" class="df'+(facOf(meta.fac).id===id?' sel':'')+'" data-act="fac" data-id="'+id+'">'+FAC[id].n+'</button>';
+  }).join('')+'</div><p>'+facOf(meta.fac).d+'</p>';
+}
 function castlesHTML(){
   return '<div class="castles">'+CASTLES.map(function(c){
     var cx=cxOf(c.id);
@@ -1699,7 +1995,7 @@ var BUGREPO='https://github.com/Barel0/ostatni-bastion/issues/new';
 var bugText='';
 function bugUrl(){
   var d=bugText.trim()||'(brak opisu)',first=d.split('\n')[0].slice(0,70);
-  var info=['Zamek: '+(S?S.castle.n:'?'),'Poziom trudności: '+(S?S.diff.n:'?'),'Fala: '+(S?S.wave+'/'+MAXWAVE:'?'),'Punkty: '+(S?S.score:'?'),'Przeglądarka: '+(typeof navigator!=='undefined'?navigator.userAgent:'?')].join('\n');
+  var info=['Zamek: '+(S?S.castle.n:'?'),'Poziom trudności: '+(S?S.diff.n:'?'),'Wrogowie: '+(S?S.fac.n:'?'),'Fala: '+(S?S.wave+'/'+MAXWAVE:'?'),'Punkty: '+(S?S.score:'?'),'Przeglądarka: '+(typeof navigator!=='undefined'?navigator.userAgent:'?')].join('\n');
   return BUGREPO+'?title='+encodeURIComponent('Błąd: '+first)+'&body='+encodeURIComponent(d+'\n\n---\n'+info);
 }
 function bugClose(){if(!S||S.modal!=='bug')return;S.modal=S.bugPrev||null;renderOverlay();ui()}
@@ -1744,14 +2040,14 @@ function renderOverlay(){
     });
   }else if(S.modal==='end'){
     var win=S.result==='win',cg=S.cxGain,cx=cxOf(S.castle.id),cp=cx.lv>=CXMAX?100:Math.floor(cx.xp/cxNeed(cx.lv)*100);
-    o.innerHTML='<div class="pan"><h2>'+(win?'Bastion obroniony':'Bastion upadł')+'</h2><p>Fala '+S.wave+' z '+MAXWAVE+' · XP w runie: poziom '+S.hero.lvl+' · pokonani kosmici: '+S.kills+' · punkty: <b style="color:var(--accent)">'+S.score+'</b>'+(S.rankPos?' (miejsce <b>#'+S.rankPos+'</b> w rankingu: '+S.diff.n+')':'')+'. Zdobywasz <b style="color:var(--epic)">'+S.earned+' ◆</b> kryształów (masz '+meta.crystals+').</p>'+
+    o.innerHTML='<div class="pan"><h2>'+(win?'Bastion obroniony':'Bastion upadł')+'</h2><p>Fala '+S.wave+' z '+MAXWAVE+' · XP w runie: poziom '+S.hero.lvl+' · pokonani wrogowie: '+S.kills+' · punkty: <b style="color:var(--accent)">'+S.score+'</b>'+(S.rankPos?' (miejsce <b>#'+S.rankPos+'</b> w rankingu: '+S.diff.n+')':'')+'. Zdobywasz <b style="color:var(--epic)">'+S.earned+' ◆</b> kryształów (masz '+meta.crystals+').</p>'+
       '<div class="mrow" style="flex-direction:column;align-items:stretch"><div><b>'+S.castle.n+': +'+cg.gain+' XP zamku</b><small>'+(cg.to>cg.from?'Awans zamku: poziom '+cg.from+' → '+cg.to+'. Każdy poziom daje +1 HP bazy, +2% obrażeń zamku i +4 złota na start.':'Poziom zamku: '+cx.lv+(cx.lv<CXMAX?' · '+cx.xp+'/'+cxNeed(cx.lv)+' XP do następnego':' (maks.)'))+'</small></div><div class="xpbar" style="height:6px"><i style="width:'+cp+'%"></i></div></div>'+
-      '<h3>Poziom trudności</h3>'+diffHTML()+'<h3>Wybierz zamek na następny run</h3>'+castlesHTML()+
+      '<h3>Poziom trudności</h3>'+diffHTML()+facHTML()+'<h3>Wybierz zamek na następny run</h3>'+castlesHTML()+
       '<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn" data-act="new">Nowy run</button><button type="button" class="btn ghost" data-act="go-title">Menu główne</button></div>'+
       '<h3>Stałe ulepszenia</h3>'+metaHTML()+'</div>';
   }else if(S.modal==='title'){
     o.innerHTML='<div class="pan ttl"><div class="logo">OSTATNI <br>BASTION</div><p class="tag">Tower defence z elementami roguelike. Kosmici lądują, a Twój zamek stoi na końcu drogi.</p>'+
-      '<label class="nickrow">Nick w rankingu <input id="nick" type="text" maxlength="'+NICKMAX+'" placeholder="Gracz" autocomplete="off" value="'+esc(meta.nick)+'"></label>'+
+      '<label class="nickrow">Nick w rankingu <input id="nick" type="text" maxlength="'+NICKMAX+'" placeholder="Gracz" autocomplete="off" value="'+esc(meta.nick)+'"></label>'+shareHTML()+
       '<div class="mm">'+(S.live
         ?'<button type="button" class="btn big" data-act="resume">Wznów grę <span>fala '+S.wave+'/'+MAXWAVE+'</span></button><button type="button" class="btn ghost big wide" data-act="go-setup">Nowa gra <span>porzuca obecną</span></button>'
         :'<button type="button" class="btn big" data-act="go-setup">Graj</button>')+
@@ -1763,7 +2059,7 @@ function renderOverlay(){
       '<button type="button" class="btn ghost big mystery" data-act="go-secret">???</button></div>'+
       '<div class="cur">Zamek: '+castleById(meta.castle).n+' · Poziom trudności: '+(DIFF[meta.diff]||DIFF.normal).n+'</div></div>';
   }else if(S.modal==='rank'){
-    o.innerHTML='<div class="pan"><button type="button" class="btn sm ghost back" data-act="go-title">← Menu</button><h2>Ranking najlepszych wyników</h2><p>Punkty dostajesz za każdego pokonanego kosmitę (Zielonek 10, Spodek 12, Rój 4, Pancernik 30, bossowie 500–1000). Każdy poziom trudności ma osobną tabelę z '+RANKMAX+' najlepszymi wynikami.</p>'+rankHTML()+'<h3>Zapis gier</h3><p>Każdy run (przebieg fal, budowy, wybrane karty, wynik) zapisuje się tylko w tej przeglądarce, bez nicku. Zapisane gry: <b>'+loadRuns().length+'</b>. Możesz pobrać je jako plik JSON do analizy balansu.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn sm" data-act="export-runs">Pobierz zapis gier</button><button type="button" class="btn sm ghost" data-act="clear-runs">Wyczyść zapis</button></div></div>';
+    o.innerHTML='<div class="pan"><button type="button" class="btn sm ghost back" data-act="go-title">← Menu</button><h2>Ranking najlepszych wyników</h2><p>Punkty dostajesz za każdego pokonanego kosmitę (Zielonek 10, Spodek 12, Rój 4, Tarczownik 18, Pancernik 30, bossowie 500–1000). Każdy poziom trudności ma osobną tabelę z '+RANKMAX+' najlepszymi wynikami.</p>'+rankHTML()+'<h3>Zapis gier</h3><p>Każdy run (przebieg fal, budowy, wybrane karty, wynik) zapisuje się w tej przeglądarce, bez nicku. Zapisane gry: <b>'+loadRuns().length+'</b>. Możesz pobrać je jako plik JSON do analizy balansu.</p>'+shareHTML()+'<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn sm" data-act="export-runs">Pobierz zapis gier</button><button type="button" class="btn sm ghost" data-act="clear-runs">Wyczyść zapis</button></div></div>';
   }else if(S.modal==='mode'){
     var md=MODES[S.modeId]||MODES.tournament;
     o.innerHTML='<div class="pan"><button type="button" class="btn sm ghost back" data-act="go-title">← Menu</button><h2>'+md.n+'</h2><p>'+md.d+'</p></div>';
@@ -1776,14 +2072,19 @@ function renderOverlay(){
   }else if(S.modal==='help'){
     o.innerHTML='<div class="pan help"><button type="button" class="btn sm ghost back" data-act="go-title">← Menu</button><h2>Jak grać</h2>'+
       '<ul style="margin:0;padding-left:18px"><li><b>Cel:</b> utrzymaj zamek przez '+MAXWAVE+' fal. Kosmici idą ścieżką, a każdy, który dotrze do zamku, zabiera mu HP.</li>'+
-      '<li><b>Wieże:</b> klawisze 1–8 lub pasek na dole, klik pola buduje, klik wieży sprzedaje. Strzelec jest startowy, resztę 7 wież zna tylko Twój zamek.</li>'+
+      '<li><b>Wieże:</b> klawisze 1–8 lub pasek na dole, klik pola buduje, klik wieży pokazuje dane i pozwala sprzedać. Na telefonie przytrzymaj wieżę na pasku i przeciągnij na planszę. Strzelec jest startowy, resztę 7 wież zna tylko Twój zamek.</li>'+
+      '<li><b>Koszt i limit:</b> każda kolejna wieża tego samego typu kosztuje o '+Math.round(TCOSTUP*100)+'% więcej, a limit to '+TLIMIT+' sztuk na typ. Ulepszenia typu działają na kolejne kopie coraz słabiej (−'+Math.round(TUPDEC*100)+'% za każdą wcześniejszą, minimum 50%).</li>'+
+      '<li><b>Sąsiedztwo (8 pól wokół wieży):</b> każdy sąsiad tego samego typu zabiera '+Math.round(SAMEPEN*100)+'% szybkostrzelności (do '+SAMEMAX+' sąsiadów), a każdy inny typ obok daje +'+Math.round(MIXBON*100)+'% obrażeń (do +'+Math.round(MIXBON*MIXMAX*100)+'%). Do tego są pary z dodatkowymi premiami (złote linie na planszy, opis po kliknięciu wieży lub w podglądzie budowy). Każdy zamek ma własne 3 pary.</li>'+
+      '<li><b>Wrogowie i kontry:</b> Pancernik ma pancerz (każde trafienie jest osłabione o stałą wartość, mocne pociski i trucizna radzą sobie lepiej), Spodek wymyka się wybuchom (−40% obrażeń obszarowych), Tarczownik odbija energię (−60% od Tesli i Lasera), Rój najlepiej niszczą wybuchy. Snajper celuje w najmocniejszego wroga, a Moździerz nie trafia w cele bliżej niż 3 pola.</li>'+
+      '<li><b>Pola specjalne:</b> ▲ Wzgórze (+20% zasięgu), ◆ Pole mocy (+15% szybkostrzelności), $ Złoże (+6 zł po każdej fali za wieżę na polu), Głaz blokuje budowę. Rozkład jest losowy w każdym runie.</li>'+
       '<li><b>Awans zamku:</b> za zabójstwa dostajesz XP. Po awansie zamku (ikona ★ w prawym górnym rogu) i po każdej odpartej fali (ikona ⚔ w lewym górnym rogu, ulepszenie wież) pojawia się mała ikona z licznikiem. Kliknij ją (albo Enter), żeby wybrać kartę. Wybór za awans zamku jest dostępny dopiero po zakończeniu fali, a nagrodę za falę możesz odebrać zawsze.</li>'+
       '<li><b>Po fali:</b> nagroda to ulepszenie wież, które działa na wszystkie wieże danego typu. Odbierasz ją, kiedy chcesz.</li>'+
-      '<li><b>Bossowie co 5 fal:</b> Al Husain Wisimulaha (spowalnia wieże w zasięgu 5 kratek), Skurvvinox (unika pocisków, wrażliwy na spowolnienia i lasery) i Bóg Kosmitów (najsilniejszy, wskrzesza się raz).</li>'+
+      '<li><b>Bossowie co 5 fal</b> (frakcja: '+facOf(meta.fac).n+'): '+facOf(meta.fac).bd.map(function(b){return b.n+' ('+b.t+')'}).join(', ')+'. Pierwszy spowalnia wieże w zasięgu 5 kratek, drugi unika pocisków (wrażliwy na spowolnienia i lasery), trzeci wskrzesza się raz.</li>'+
+      '<li><b>Wrogowie:</b> przed runem wybierasz frakcję. Kosmici nie mają dodatkowych mechanik, Kościelni leczą się aurą Proboszcza, dresiarze wpadają w szał, politycy mają tarcze immunitetu, a Streamer rozpada się na Followerów.</li>'+
       '<li><b>Skróty:</b> Spacja start fali, F prędkość gry, Esc anuluj budowę.</li></ul></div>';
   }else{
-    o.innerHTML='<div class="pan"><button type="button" class="btn sm ghost back" data-act="go-title">← Menu</button><h2>Ostatni Bastion</h2><p>Kosmici lądują i maszerują do Twojego zamku. Zamek strzela sam i ma umiejętności pasywne, a wieże stawiasz Ty. Po awansie zamku wybierasz 1 z 3 kart (zamek, umiejętności, przedmioty), a po każdej fali 1 z 3 ulepszeń wież. Każdy run kończy się XP dla wybranego zamku, który awansuje na stałe. Dociągnij do fali '+MAXWAVE+'.</p>'+
-      '<h3>Poziom trudności</h3>'+diffHTML()+'<h3>Wybierz zamek</h3>'+castlesHTML()+
+    o.innerHTML='<div class="pan"><button type="button" class="btn sm ghost back" data-act="go-title">← Menu</button><h2>Ostatni Bastion</h2><p>Wrogowie (kosmici albo inna frakcja do wyboru) maszerują do Twojego zamku. Zamek strzela sam i ma umiejętności pasywne, a wieże stawiasz Ty. Po awansie zamku wybierasz 1 z 3 kart (zamek, umiejętności, przedmioty), a po każdej fali 1 z 3 ulepszeń wież. Każdy run kończy się XP dla wybranego zamku, który awansuje na stałe. Dociągnij do fali '+MAXWAVE+'.</p>'+
+      '<h3>Poziom trudności</h3>'+diffHTML()+facHTML()+'<h3>Wybierz zamek</h3>'+castlesHTML()+
       '<div><button type="button" class="btn" data-act="new">Rozpocznij run</button></div></div>';
   }
   if(S.modal==='menu'||S.modal==='end')paintPreviews();
@@ -1815,12 +2116,62 @@ cv.addEventListener('pointerdown',function(ev){
   if(S.build){tryBuild(c,r);return}
   S.sel=null;
 });
-function toggleBuild(k){S.build=S.build===k?null:k;if(S.build)S.sel=null}
+function toggleBuild(k){
+  if(S.build!==k&&towerCount(k)>=TLIMIT){dragHint('Limit '+TLIMIT+' wież tego typu');return}
+  S.build=S.build===k?null:k;if(S.build)S.sel=null;
+}
+/* Dotyk: przytrzymaj wieżę na pasku, przeciągnij na planszę i puść, żeby postawić (zamiast „kliknij, kliknij”). Mysz i klawisze działają jak dawniej. */
+var drag=null,dragNoClick=false,dragHintEl=null,dragHintT=0,DRAG_HOLD=180,DRAG_OFF=48;
+function dragCell(ev){
+  var r=cv.getBoundingClientRect(),x=ev.clientX,y=ev.clientY-DRAG_OFF;
+  if(x<r.left||x>r.right||y<r.top||y>r.bottom)return null;
+  var p=cvPos({clientX:x,clientY:y});
+  return {c:Math.floor(p.x/T),r:Math.floor(p.y/T)};
+}
+function dragHint(msg){
+  if(!dragHintEl){dragHintEl=document.createElement('div');dragHintEl.id='dhint';document.body.appendChild(dragHintEl)}
+  dragHintEl.textContent=msg;dragHintEl.className='show';
+  clearTimeout(dragHintT);dragHintT=setTimeout(function(){dragHintEl.className=''},1800);
+}
+function dragStart(){
+  if(!drag||drag.on)return;
+  clearTimeout(drag.timer);
+  if(!S||S.modal)return;
+  if(towerCount(drag.k)>=TLIMIT){dragHint('Limit '+TLIMIT+' wież tego typu');drag.dead=true;return}
+  if(S.gold<towerCost(drag.k)){dragHint('Za mało złota na tę wieżę');drag.dead=true;return}
+  drag.on=true;S.build=drag.k;S.sel=null;
+  if(navigator.vibrate)navigator.vibrate(15);
+}
+function dragEnd(ev,drop){
+  var d=drag;drag=null;if(!d)return;
+  clearTimeout(d.timer);
+  setTimeout(function(){dragNoClick=false},400);
+  if(d.on){
+    var cell=drop?dragCell(ev):null;
+    if(cell&&S&&!S.modal)tryBuild(cell.c,cell.r);
+    S.build=null;hover=null;
+  }else if(drop&&!d.dead)dragHint('Przytrzymaj wieżę i przeciągnij na planszę');
+}
+document.addEventListener('pointerdown',function(ev){
+  if(ev.pointerType!=='touch')return;
+  var el=ev.target.closest&&ev.target.closest('.tb');
+  if(!el||!S||S.modal||drag)return;
+  dragNoClick=true;
+  drag={id:ev.pointerId,k:el.getAttribute('data-k'),x:ev.clientX,y:ev.clientY,on:false,dead:false,timer:setTimeout(dragStart,DRAG_HOLD)};
+});
+document.addEventListener('pointermove',function(ev){
+  if(!drag||ev.pointerId!==drag.id)return;
+  if(!drag.on&&!drag.dead&&Math.abs(ev.clientX-drag.x)+Math.abs(ev.clientY-drag.y)>12)dragStart();
+  if(drag&&drag.on){ev.preventDefault();hover=dragCell(ev)}
+});
+document.addEventListener('pointerup',function(ev){if(drag&&ev.pointerId===drag.id)dragEnd(ev,true)});
+document.addEventListener('pointercancel',function(ev){if(drag&&ev.pointerId===drag.id)dragEnd(ev,false)});
+document.addEventListener('contextmenu',function(e){if(e.target.closest&&e.target.closest('.tb'))e.preventDefault()});
 function cycleSpeed(){S.speed=S.speed===1?2:S.speed===2?3:1}
 document.addEventListener('click',function(ev){
   var el=ev.target.closest&&ev.target.closest('[data-act]');if(!el||!S)return;
   var a=el.getAttribute('data-act');
-  if(a==='build'){if(!S.modal)toggleBuild(el.getAttribute('data-k'))}
+  if(a==='build'){if(!S.modal&&!dragNoClick)toggleBuild(el.getAttribute('data-k'))}
   else if(a==='sell')sellTower(S.sel);
   else if(a==='pick')pickCard(+el.getAttribute('data-i'));
   else if(a==='lv-toggle')lvToggle(el.getAttribute('data-k')||undefined);
@@ -1847,6 +2198,11 @@ document.addEventListener('click',function(ev){
     if(S.modal==='menu'){newRun();S.modal='menu';cache={};tbCache={}}
     renderOverlay();
   }
+  else if(a==='fac'){
+    meta.fac=el.getAttribute('data-id');saveMeta();
+    if(S.modal==='menu'){newRun();S.modal='menu';cache={};tbCache={}}
+    renderOverlay();
+  }
   else if(a==='castle'){
     meta.castle=el.getAttribute('data-id');saveMeta();
     if(S.modal==='menu'){newRun();S.modal='menu';cache={};tbCache={}}
@@ -1860,6 +2216,7 @@ document.addEventListener('click',function(ev){
 document.addEventListener('input',function(ev){
   var t=ev.target;if(!t)return;
   if(t.id==='bugtxt'){bugText=String(t.value||'').slice(0,1500);var a=$('bugsend');if(a)a.href=bugUrl();return}
+  if(t.id==='share'){meta.share=!!t.checked;saveMeta();return}
   if(t.id!=='nick')return;
   meta.nick=String(t.value||'').slice(0,NICKMAX);saveMeta();
 });
@@ -1936,7 +2293,7 @@ function frame(ts){
 }
 loadMeta();newRun();S.modal='title';renderOverlay();
 if(typeof window!=='undefined'&&window.__TEST){
-  window.__game={get S(){return S},update:update,newRun:newRun,startWave:startWave,tryBuild:tryBuild,pickCard:pickCard,draw:draw,ui:ui,validCell:validCell,towerCost:towerCost,renderOverlay:renderOverlay,dealDamage:dealDamage,openCards:openCards,lvToggle:lvToggle,lvPick:lvPick,meta:function(){return meta},MAXWAVE:MAXWAVE,CASTLES:CASTLES,TKEYS:TKEYS,drawCastle:drawCastle,drawTower:drawTower,drawEnemy:drawEnemy,ENEMY:ENEMY,setClock:function(v){clock=v},setCastle:function(id){meta.castle=id},setDiff:function(id){meta.diff=id}};
+  window.__game={get S(){return S},update:update,newRun:newRun,startWave:startWave,tryBuild:tryBuild,pickCard:pickCard,draw:draw,ui:ui,validCell:validCell,towerCost:towerCost,towerCount:towerCount,synCalc:synCalc,TLIMIT:TLIMIT,renderOverlay:renderOverlay,dealDamage:dealDamage,openCards:openCards,lvToggle:lvToggle,lvPick:lvPick,meta:function(){return meta},MAXWAVE:MAXWAVE,CASTLES:CASTLES,TKEYS:TKEYS,drawCastle:drawCastle,drawTower:drawTower,drawEnemy:drawEnemy,ENEMY:ENEMY,setClock:function(v){clock=v},setCastle:function(id){meta.castle=id},setDiff:function(id){meta.diff=id},setFaction:function(id){meta.fac=id},FAC:FAC};
 }else requestAnimationFrame(frame);
 })();
 </script>

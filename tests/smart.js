@@ -1,5 +1,5 @@
 // Mądrzejszy bot do kalibracji trudności (pokrycie ścieżki, wydawanie całego złota, rozsądny wybór kart).
-// Użycie: node tests/extract.js && node tests/smart.js [runów] [easy,normal,hard,hardcore]
+// Użycie: node tests/extract.js && node tests/smart.js [runów] [easy,normal,hard,hardcore] [aliens|church|gopnik|pol|infl]
 const path=require('path');
 const gamePath=path.join(__dirname,'game.js');
 const N=+process.argv[2]||32;
@@ -13,18 +13,22 @@ const G=window.__game;
 const RANGE={arrow:105,cannon:120,frost:100,sniper:230,tesla:105,poison:100,mortar:270,laser:125};
 function samples(s){const pts=[];for(let d=0;d<s.path.len;d+=10){const seg=s.path.segs.find(sg=>d<=sg.s+sg.l)||s.path.segs[s.path.segs.length-1];const t=(d-seg.s)/seg.l;pts.push({x:seg.a.x+(seg.b.x-seg.a.x)*t,y:seg.a.y+(seg.b.y-seg.a.y)*t,w:1})}return pts}
 function bestCell(s,type,pts){
-  const r=RANGE[type]*.92;let best=null,bs=-1;
+  const r0=RANGE[type]*.92;let best=null,bs=-1;
   for(let c=0;c<30;c++)for(let rr=0;rr<18;rr++){
     if(!G.validCell(c,rr))continue;
-    const x=c*32+16,y=rr*32+16;let sc=0;
+    const x=c*32+16,y=rr*32+16;
+    // sąsiedztwo: kara za ten sam typ, premie za pary, wzgórze/pole mocy/złoże
+    const o=G.synCalc(type,c,rr,null),r=r0*o.rg;let sc=0;
     for(const p of pts){if(Math.hypot(p.x-x,p.y-y)<=r)sc+=1}
-    // bonus za bliskość końca ścieżki (tam zbiera się ogień zamku)
+    sc*=o.rt*o.dm*(1+(o.sb+o.pb)*.4+o.cr*.5+o.ch*.1);
+    if(o.spot&&o.spot.n==='Złoże')sc+=4;
     if(sc>bs){bs=sc;best={c,r:rr}}
   }
   return best;
 }
 // kolejność budowy: ratio typów
-const ORDER=['arrow','frost','cannon','tesla','cannon','laser','arrow','frost','mortar','tesla','sniper','laser','cannon','poison','arrow','tesla'];
+// MONO=typ node tests/smart.js ... : bot buduje tylko jeden typ wież (test ściany z jednego typu, limit sztuk obowiązuje)
+const ORDER=process.env.MONO?[process.env.MONO]:['arrow','frost','cannon','tesla','cannon','laser','arrow','frost','mortar','tesla','sniper','laser','cannon','poison','arrow','tesla'];
 function lvlScore(c,S){
   const id=c.id;
   if(c.k==='skill')return 9;
@@ -48,7 +52,7 @@ function claim(){
   }
 }
 function run(cid,diff){
-  G.setCastle(cid);G.setDiff(diff);G.newRun();G.S.modal=null;
+  G.setCastle(cid);G.setDiff(diff);G.setFaction(process.argv[4]||"aliens");G.newRun();G.S.modal=null;
   let steps=0,lossW=[],prev=null,goldAt=[];
   const pts=samples(G.S);
   while(!G.S.modal){
@@ -60,9 +64,11 @@ function run(cid,diff){
       let n=0;
       while(n<60){
         const k=s.towers.length;
-        // wybór typu: pierwszy z ORDER, na który stać
-        let ty=ORDER[k%ORDER.length];
-        if(s.wave<2&&k<2)ty=['arrow','frost'][k];
+        // wybór typu: następny z ORDER, który nie osiągnął limitu (limit sztuk na typ), jeśli stać
+        let ty=null;
+        for(let j=0;j<ORDER.length;j++){const cand=ORDER[(k+j)%ORDER.length];if(G.towerCount(cand)<G.TLIMIT){ty=cand;break}}
+        if(s.wave<2&&k<2&&G.towerCount(['arrow','frost'][k])<G.TLIMIT)ty=['arrow','frost'][k];
+        if(!ty)break;
         if(s.gold<G.towerCost(ty)){break}
         const cell=bestCell(s,ty,pts);if(!cell)break;
         s.build=ty;const g0=s.towers.length;G.tryBuild(cell.c,cell.r);if(s.towers.length===g0)break;n++;
