@@ -150,7 +150,11 @@ button{font:inherit;color:var(--text);cursor:pointer}
 .sk small{color:var(--muted);font-size:11px}
 .sk i{position:absolute;left:0;bottom:0;height:3px;background:var(--accent);width:calc(var(--p,1)*100%)}
 .sk.lock{opacity:.4}
-.info{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between;min-height:40px;color:var(--muted)}
+/* Info o zaznaczonej wieży to dymek na dole planszy (widoczny tylko po zaznaczeniu wieży) */
+.info{position:absolute;left:8px;bottom:8px;z-index:4;max-width:calc(100% - 16px);display:none;flex-wrap:wrap;gap:6px 14px;align-items:center;background:rgba(10,14,18,.94);border:1px solid var(--line);border-radius:10px;padding:6px 12px;color:var(--muted)}
+#app.hassel .info{display:flex}
+.mid{display:flex;flex-direction:column;gap:4px;justify-content:space-between}
+em.nm{font-style:normal}
 .sel{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;color:var(--text)}
 .sel b{font-family:var(--display)}
 .slots{display:flex;gap:4px;flex-wrap:wrap}
@@ -167,6 +171,39 @@ html:fullscreen #app{max-width:none;padding:8px 14px 10px;gap:8px}
 html:fullscreen .board{width:min(100%,calc((100vh - 250px)*1.6667));margin:0 auto}
 html:-webkit-full-screen #app{max-width:none;padding:8px 14px 10px;gap:8px}
 html:-webkit-full-screen .board{width:min(100%,calc((100vh - 250px)*1.6667));margin:0 auto}
+}
+/* Komputer (układ „kompakt”): cienka belka u góry, plansza, jedna belka na dole (wieże | umiejętności i przedmioty | sterowanie). Plansza skaluje się do wysokości okna. */
+@media (min-width:900px) and (min-height:541px){
+#app{max-width:max(1180px,min(1320px,calc((100vh - 184px)*1.6667 + 28px)));padding:8px 14px 10px;gap:6px}
+html:fullscreen #app{max-width:max(1180px,min(1320px,calc((100vh - 184px)*1.6667 + 28px)));padding:8px 14px 10px;gap:6px}
+html:fullscreen .board{width:min(100%,calc((100vh - 184px)*1.6667))}
+.board{width:min(100%,calc((100vh - 184px)*1.6667));margin:0 auto}
+.hud{flex-wrap:wrap;gap:4px 12px}
+h1{flex-direction:row;align-items:baseline;gap:10px;font-size:16px;white-space:nowrap}
+.hud .rt{flex-wrap:nowrap;gap:10px}
+.stats{flex-wrap:nowrap;gap:12px}
+#bug{font-size:0;padding:4px 9px}
+#bug::before{content:"\1F41E";font-size:14px}
+.st{flex-direction:row;align-items:baseline;gap:5px;min-width:0;white-space:nowrap}
+.st small{font-size:10px}
+.info{max-width:62%}
+.st b{font-size:15px}
+.st .xpbar{width:56px;margin:0;align-self:center}
+.bar{flex-wrap:wrap;gap:8px 12px;justify-content:space-between}
+#towers{flex-wrap:nowrap;gap:4px}
+.tb{flex-direction:column;align-items:center;gap:1px;padding:4px 6px;min-width:58px}
+.tb canvas{width:34px;height:34px}
+.tb span{align-items:center}
+.tb .nm,.tb .role{display:none}
+#skills{flex-wrap:nowrap}
+.sk{min-width:92px;padding:5px 8px}
+.mid{min-width:350px}
+.slots{flex-wrap:nowrap;gap:3px;contain:inline-size;overflow:hidden}
+.slot{flex:1;text-align:center;white-space:nowrap;padding:2px 5px;font-size:10px}
+.bar>.grp:last-child{display:grid;grid-template-columns:auto auto;gap:6px;align-content:stretch}
+.col{display:contents}
+#go{order:1}#spd{order:2}#quit{order:3}#exit{order:4}
+#app.inmodal .info{visibility:hidden}
 }
 /* Ranking */
 .tabs{display:flex;flex-wrap:wrap;gap:6px}
@@ -234,13 +271,13 @@ h1{display:none}
 #bug{font-size:0;padding:3px 8px}
 #bug::before{content:"\1F41E";font-size:13px}
 .board{width:min(100vw,calc(100vh*1.6667));width:min(100vw,calc(100dvh*1.6667));border-radius:0;border:0}
-.bar{display:contents}
+.bar,.mid{display:contents}
 #towers{position:fixed;left:50%;bottom:4px;transform:translateX(-50%);z-index:6;display:flex;flex-wrap:nowrap;gap:3px;background:rgba(10,14,18,.8);border:1px solid var(--line);border-radius:12px;padding:3px}
 .tb{flex-direction:column;padding:3px 5px;background:transparent;border:1px solid transparent;align-items:center}
 .tb.on{border-color:var(--accent);background:var(--panel2)}
 .tb b,.tb .role{display:none}
 .tb canvas{width:30px;height:30px}
-.tb small{font-size:10px}
+.tb small{font-size:10px;white-space:nowrap}
 #skills{position:fixed;left:6px;top:50%;transform:translateY(-50%);flex-direction:column;z-index:6;gap:4px}
 .sk{min-width:78px;padding:4px 6px}
 .sk small{display:none}
@@ -248,7 +285,7 @@ h1{display:none}
 .bar>.grp:last-child{position:fixed;right:6px;top:50%;transform:translateY(-50%);z-index:6;flex-direction:column;gap:4px}
 .btn{padding:7px 9px;font-size:12px}
 .btn.red small{font-size:9px}
-.info{position:fixed;left:50%;bottom:62px;transform:translateX(-50%);z-index:6;min-height:0;background:rgba(10,14,18,.92);border:1px solid var(--line);border-radius:10px;padding:4px 10px;display:none;width:max-content;max-width:calc(100vw - 260px)}
+.info{position:fixed;left:50%;bottom:66px;transform:translateX(-50%);z-index:6;min-height:0;background:rgba(10,14,18,.92);border:1px solid var(--line);border-radius:10px;padding:4px 10px;display:none;width:max-content;max-width:calc(100vw - 260px)}
 #app.hassel .info{display:flex}
 .sel{gap:6px 10px;font-size:12px}
 .sel>span:nth-child(2){display:none}
@@ -278,11 +315,12 @@ h1{display:none}
     <canvas id="cv" aria-label="Plansza gry"></canvas>
     <div class="lvwrap L" id="lvww" hidden><button type="button" class="lvbtn" id="lvwb" data-act="lv-toggle" data-k="wave"></button><div class="lvpan" id="lvwp" hidden></div></div>
     <div class="lvwrap R" id="lvw" hidden><button type="button" class="lvbtn" id="lvb" data-act="lv-toggle" data-k="level"></button><div class="lvpan" id="lvp" hidden></div></div>
+    <section class="info"><div id="sel" class="sel"></div></section>
     <div class="ov" id="ov" hidden></div>
   </div>
   <section class="bar">
     <div class="grp" id="towers"></div>
-    <div class="grp" id="skills"></div>
+    <div class="mid"><div class="grp" id="skills"></div><div id="items" class="slots"></div></div>
     <div class="grp">
       <div class="col">
         <button class="btn" id="go" type="button">Start fali</button>
@@ -293,10 +331,6 @@ h1{display:none}
         <button class="btn ghost exit" id="exit" type="button" title="Wyjdź do menu startowego (gra zostanie wstrzymana)" aria-label="Wyjdź do menu startowego"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
       </div>
     </div>
-  </section>
-  <section class="info">
-    <div id="sel" class="sel"></div>
-    <div id="items" class="slots"></div>
   </section>
 </div>
 <div id="rot" role="dialog" aria-modal="true" aria-labelledby="rott"><div class="rotph" aria-hidden="true"></div><h2 id="rott">Obróć telefon poziomo</h2><p>Plansza będzie około 2× większa, a przyciski wygodniejsze do dotykania.</p><p id="rotnote"></p><button type="button" class="btn" data-act="rot-go">Obróć i graj</button><button type="button" class="btn ghost" data-act="rot-off">Graj w pionie</button></div>
@@ -1904,7 +1938,7 @@ function setHTML(id,html){if(cache[id]!==html){cache[id]=html;$(id).innerHTML=ht
 function initTowerBar(){
   $('towers').innerHTML=TKEYS.map(function(k){
     var d=S.tinfo[k];
-    return '<button type="button" class="tb" id="tb-'+k+'" data-act="build" data-k="'+k+'" title="'+d.n+' · '+ROLE[k]+' · '+twText(d.tw)+'"><canvas id="ti-'+k+'" width="60" height="60"></canvas><span><b style="color:'+d.col+'">'+d.key+' · '+d.n+'</b><small id="tc-'+k+'"></small></span></button>';
+    return '<button type="button" class="tb" id="tb-'+k+'" data-act="build" data-k="'+k+'" title="'+d.n+' · '+ROLE[k]+' · '+twText(d.tw)+'"><canvas id="ti-'+k+'" width="60" height="60"></canvas><span><b style="color:'+d.col+'">'+d.key+'<em class="nm"> · '+d.n+'</em></b><small id="tc-'+k+'"></small></span></button>';
   }).join('');
   TKEYS.forEach(function(k){
     var c=$('ti-'+k);if(!c||!c.getContext)return;
