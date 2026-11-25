@@ -345,7 +345,7 @@ function cxNeed(l){return 120*l}
 /* ---------- Zapis gier (do późniejszej analizy balansu) ----------
    Każdy zakończony, zakończony przyciskiem lub porzucony run trafia do localStorage ('bib-runs', ostatnie RUNMAX).
    Format rekordu opisany w CLAUDE.md. Nick nie jest zapisywany. */
-var RUNKEY='bib-runs',RUNMAX=200,GAMEVER='2026.11.25.4';
+var RUNKEY='bib-runs',RUNMAX=200,GAMEVER='2026.11.25.5';
 /* Automatyczne wysyłanie runów do analizy: adres punktu zbierającego (patrz tools/collector-apps-script.js). Pusty = wysyłanie wyłączone.
    Wysyła się anonimowy rekord runu (bez nicku i bez identyfikatora), o ile gracz nie wyłączył opcji (meta.share). */
 var COLLECTURL='';
@@ -453,7 +453,7 @@ var BOSS=[
 function mkBoss(i,n,t,c){var b=BOSS[i],o={},k;for(k in b)o[k]=b[k];o.n=n;o.t=t;o.color=c;return o}
 var FAC={
   aliens:{id:'aliens',n:'Kosmici',mech:'',hp:1,bd:BOSS,d:'Klasyczna inwazja: Zielonki, Spodki, Pancerniki i Rój. Bossowie: Al Husain Wisimulaha, Skurvvinox i Bóg Kosmitów. Bez dodatkowych mechanik.'},
-  church:{id:'church',n:'Kościelni',mech:'heal',hp:.8,d:'Procesja parafian. Proboszcz (wolny, wytrzymały) otacza się aurą, która leczy pobliskich wrogów (3,5% HP na sekundę w promieniu 2,5 kratki). Zabij go w pierwszej kolejności.',
+  church:{id:'church',n:'Kościelni',mech:'heal',hp:.72,d:'Procesja parafian. Proboszcz (wolny, wytrzymały) otacza się aurą, która leczy pobliskich wrogów (3,5% HP na sekundę w promieniu 2,5 kratki). Zabij go w pierwszej kolejności.',
     e:{grunt:{n:'Parafianin',c:'#6b5a8c'},runner:{n:'Kleryk',c:'#2e2e3a'},brute:{n:'Proboszcz',c:'#8c2a3a'},swarm:{n:'Chórzystka',c:'#d9d2c0'},shield:{n:'Ministrant z tarczą',c:'#e8e0c8'}},
     bd:[mkBoss(0,'Biskup Kadzidło','Kosmiczny dym: chmura spowalnia wieże','#e0c060'),mkBoss(1,'Kaznodzieja Szybkie Słowo','Wymyka się pociskom','#9a6bd6'),mkBoss(2,'Kardynał Purpuratus','Cud: jedno wskrzeszenie','#c0304a')]},
   gopnik:{id:'gopnik',n:'Ruscy dresiarze',mech:'rage',hp:.93,d:'Banda z osiedla w dresach. Poniżej połowy HP wpadają w szał i biegną 40% szybciej, więc dobijaj ich od razu, nie zostawiaj rannych.',
