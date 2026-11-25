@@ -99,25 +99,33 @@ button{font:inherit;color:var(--text);cursor:pointer}
 .card .lv{align-self:center;font:700 12px var(--display);letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
 .help li{margin:0 0 6px;line-height:1.45;color:var(--muted)}
 .help li b{color:var(--text)}
-/* Popupy nagród: awans zamku (prawy górny róg, złoty) i nagroda za falę (lewy górny róg, niebieski). Baner fali jest na środku, więc nic na siebie nie nachodzi. */
-.lvwrap{position:absolute;top:10px;z-index:3;display:flex;flex-direction:column;gap:6px;width:clamp(190px,27%,260px);--pc:var(--accent)}
-.lvwrap.R{right:10px;align-items:flex-end}
-.lvwrap.L{left:10px;align-items:flex-start;--pc:var(--frost)}
-.lvwrap[hidden]{display:none}
-.lvbtn{background:var(--pc);color:#14100a;border:0;border-radius:18px;padding:7px 14px;font:700 13px var(--display);letter-spacing:.04em;box-shadow:0 0 0 0 var(--pc);animation:lvp 1.4s infinite;max-width:100%}
+/* Popupy nagród: dwie małe okrągłe ikony z licznikiem w górnych rogach (awans zamku po prawej, złoty; nagroda za falę po lewej, niebieski). Po kliknięciu wybór kart pojawia się na środku planszy z przyciemnieniem tła (gra nie jest zatrzymana). */
+.lvwrap{position:absolute;top:10px;z-index:3;--pc:var(--accent)}
+.lvwrap.R{right:10px}
+.lvwrap.L{left:10px;--pc:var(--frost)}
+.lvwrap.open{inset:0;z-index:5;display:grid;place-items:center;pointer-events:none}
+.lvwrap.open::before{content:"";position:absolute;inset:0;background:rgba(0,0,0,.58)}
+.lvwrap[hidden]{display:none!important}
+.lvbtn{position:relative;display:flex;align-items:center;justify-content:center;width:46px;height:46px;padding:0;border:0;border-radius:50%;background:var(--pc);color:#14100a;font:700 22px/1 var(--display);box-shadow:0 0 0 0 var(--pc);animation:lvp 1.4s infinite}
+.lvbtn::after{content:attr(data-n);position:absolute;right:-3px;top:-3px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:#ff5c5c;color:#fff;font:700 11px/18px var(--display);text-align:center}
 .lvbtn.lock{background:var(--panel2);color:var(--muted);animation:none;border:1px solid var(--line)}
+.lvbtn.lock::after{background:var(--line);color:var(--muted)}
 .lvbtn.open{animation:none;box-shadow:0 0 12px var(--pc)}
+.lvwrap.open .lvbtn{position:absolute;top:10px;z-index:2;pointer-events:auto}
+.lvwrap.open.R .lvbtn{right:10px}
+.lvwrap.open.L .lvbtn{left:10px}
 @keyframes lvp{0%{box-shadow:0 0 0 0 rgba(255,255,255,.5)}70%{box-shadow:0 0 0 10px rgba(255,255,255,0)}100%{box-shadow:0 0 0 0 rgba(255,255,255,0)}}
-.lvpan{width:100%;display:flex;flex-direction:column;gap:6px;background:rgba(13,18,23,.92);border:1px solid var(--pc);border-left-width:4px;border-radius:8px;padding:8px;backdrop-filter:blur(2px)}
+.lvpan{width:min(92%,700px);display:grid;grid-template-columns:repeat(3,1fr);gap:12px;background:rgba(13,18,23,.94);border:1px solid var(--pc);border-top:3px solid var(--pc);border-radius:12px;padding:16px;box-shadow:0 0 40px rgba(0,0,0,.7);position:relative;z-index:2;pointer-events:auto}
 .lvpan[hidden]{display:none}
+.lvpan h4{grid-column:1/-1;text-align:center}
 .lvwrap.L .lvpan h4{color:var(--frost)}
 .lvwrap.R .lvpan h4{color:var(--accent)}
-.lvpan h4{margin:0 0 2px;font:700 12px var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-.lvpan .card{min-height:0;padding:8px 10px 8px 10px;gap:2px}
-.lvpan .card.tc{flex-direction:row;align-items:center;gap:10px}
-.lvpan .card.tc>div{display:flex;flex-direction:column;gap:2px}
-.lvpan .card .thumb{width:56px;height:56px;margin:0}
-.lvpan .card strong{font-size:14px}
+.lvpan h4{margin:0 0 2px;font:700 15px var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.lvpan .card{min-height:150px;padding:12px;gap:4px}
+.lvpan .card.tc{flex-direction:column;text-align:center;align-items:center;justify-content:center;gap:6px}
+.lvpan .card.tc>div{display:flex;flex-direction:column;align-items:center;gap:2px}
+.lvpan .card .thumb{width:72px;height:72px;margin:0}
+.lvpan .card strong{font-size:15px}
 .lvpan .card span:last-of-type{font-size:12px}
 .btn.sm{padding:6px 10px;font-size:12px}
 .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
@@ -183,7 +191,14 @@ html:-webkit-full-screen .board{width:min(100%,calc((100vh - 250px)*1.6667));mar
 .mm .btn.mystery{border-style:dashed}
 .dlg{background:var(--panel);border:2px solid var(--accent);border-radius:12px;padding:26px 30px;box-shadow:0 0 40px rgba(0,0,0,.6);text-align:center;display:flex;flex-direction:column;gap:18px;align-items:center;max-width:min(520px,100%)}
 .dlg b{font:700 28px/1.2 var(--display);color:var(--accent);text-wrap:balance}
-@media (max-width:640px){.cards{grid-template-columns:1fr}.card{min-height:0}.meta{grid-template-columns:1fr}}
+.dlg.bug{text-align:left;align-items:stretch;width:min(520px,100%);gap:12px}
+.dlg.bug h2{margin:0}
+.dlg.bug textarea{width:100%;min-height:110px;resize:vertical;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:10px;font:14px/1.4 var(--body)}
+.dlg.bug textarea:focus{border-color:var(--accent);outline:none}
+.dlg.bug small{color:var(--muted);line-height:1.4}
+.dlg.bug .row{display:flex;gap:8px;flex-wrap:wrap}
+.dlg.bug a.btn{text-decoration:none;display:inline-block}
+@media (max-width:640px){.cards{grid-template-columns:1fr}.card{min-height:0}.meta{grid-template-columns:1fr}.lvpan{grid-template-columns:1fr}.lvpan .card{min-height:0}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -191,7 +206,7 @@ html:-webkit-full-screen .board{width:min(100%,calc((100vh - 250px)*1.6667));mar
 <div id="app">
   <header class="hud">
     <h1>Ostatni Bastion <small id="cname"></small></h1>
-    <div class="rt"><div class="stats" id="stats"></div><button class="fsb" id="fs" type="button" title="Pełny ekran">⛶</button></div>
+    <div class="rt"><div class="stats" id="stats"></div><button class="fsb" id="bug" type="button" title="Zgłoś błąd" data-act="bug">🐞 Zgłoś błąd</button><button class="fsb" id="fs" type="button" title="Pełny ekran">⛶</button></div>
   </header>
   <div class="board">
     <canvas id="cv" aria-label="Plansza gry"></canvas>
@@ -262,6 +277,40 @@ function ml(id){return meta.lv[id]||0}
 function cxOf(id){var c=meta.cx[id];if(!c){c=meta.cx[id]={xp:0,lv:1}}return c}
 function cxNeed(l){return 120*l}
 
+/* ---------- Zapis gier (do późniejszej analizy balansu) ----------
+   Każdy zakończony, zakończony przyciskiem lub porzucony run trafia do localStorage ('bib-runs', ostatnie RUNMAX).
+   Format rekordu opisany w CLAUDE.md. Nick nie jest zapisywany. */
+var RUNKEY='bib-runs',RUNMAX=200,GAMEVER='2026.11.25';
+function loadRuns(){try{var j=JSON.parse(localStorage.getItem(RUNKEY)||'[]');return Array.isArray(j)?j:[]}catch(e){return []}}
+function storeRun(rec){
+  var l=loadRuns();l.push(rec);if(l.length>RUNMAX)l=l.slice(l.length-RUNMAX);
+  try{localStorage.setItem(RUNKEY,JSON.stringify(l))}catch(e){try{localStorage.setItem(RUNKEY,JSON.stringify(l.slice(Math.floor(l.length/2))))}catch(e2){}}
+}
+function logNew(cl){return {t0:Date.now(),cl:cl,w:[],pk:[],bd:[],lk:0,saved:false}}
+function towerCounts(){var o={};S.towers.forEach(function(t){o[t.type]=(o[t.type]||0)+1});return o}
+function logWaveStart(){S.log.w.push({w:S.wave,hp0:S.baseHp,g0:Math.floor(S.gold),tw:towerCounts(),lvl:S.hero.lvl,t0:Math.round(S.time),k0:S.kills,l0:S.log.lk})}
+function logWaveEnd(){
+  var e=S.log.w[S.log.w.length-1];if(!e||e.hp1!==undefined)return;
+  e.hp1=S.baseHp;e.g1=Math.floor(S.gold);e.k=S.kills-e.k0;e.lk=S.log.lk-e.l0;e.dt=Math.round(S.time-e.t0);
+  if(S.phase==='wave')e.part=1;
+  delete e.k0;delete e.l0;
+}
+function logRun(res){
+  if(!S||!S.log||S.log.saved)return;
+  S.log.saved=true;logWaveEnd();
+  storeRun({v:GAMEVER,at:new Date().toISOString(),cs:S.castle.id,cl:S.log.cl,df:S.did,res:res,wave:S.wave,score:S.score,kills:S.kills,bosses:S.bosses,
+    hp:Math.max(0,S.baseHp),hpMax:S.baseMax,lvl:S.hero.lvl,gold:Math.floor(S.gold),gt:Math.round(S.time),rt:Math.round((Date.now()-S.log.t0)/1000),
+    cr:S.earned||0,ml:JSON.parse(JSON.stringify(meta.lv)),tup:JSON.parse(JSON.stringify(S.tup)),sk:JSON.parse(JSON.stringify(S.skills)),items:S.items.slice(),
+    tw:S.towers.map(function(t){return [t.type,t.c,t.r]}),lk:S.log.lk,w:S.log.w,pk:S.log.pk,bd:S.log.bd});
+}
+function exportRuns(){
+  try{
+    var blob=new Blob([JSON.stringify({game:'ostatni-bastion',ver:GAMEVER,exported:new Date().toISOString(),runs:loadRuns()})],{type:'application/json'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='bastion-runy-'+new Date().toISOString().slice(0,10)+'.json';
+    document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000);
+  }catch(e){}
+}
+
 /* ---------- Definicje ---------- */
 var TOWER={
   arrow:{n:'Strzelec',cost:50,dmg:9,rate:1.4,range:105,color:'#e8eef2',proj:380,kind:'arrow',key:'1'},
@@ -277,10 +326,10 @@ var TKEYS=['arrow','cannon','frost','sniper','tesla','poison','mortar','laser'];
 var ARCH=['cannon','frost','sniper','tesla','poison','mortar','laser'];
 var ROLE={arrow:'Szybki',cannon:'Obszarowa',frost:'Spowalnia',sniper:'Dalekosiężna',tesla:'Łańcuch',poison:'Trucizna',mortar:'Artyleria',laser:'Wiązka'};
 var DIFF={
-  easy:{n:'Łatwy',hp:1,cnt:1,spd:1,rw:.7,d:'Wrogowie jak w poprzedniej wersji gry. Nagrody (kryształy i XP zamku) ×0,7.'},
-  normal:{n:'Normalny',hp:1.5,cnt:1.2,spd:1.05,rw:1,d:'Wrogowie mają o 50% więcej HP, jest ich o 20% więcej i są trochę szybsi. Nagrody ×1.'},
-  hard:{n:'Trudny',hp:2,cnt:1.4,spd:1.1,rw:1.5,d:'Wrogowie mają 2 razy więcej HP, jest ich o 40% więcej i są szybsi. Nagrody ×1,5.'},
-  hardcore:{n:'Hardcore',hp:1.7,cnt:1.25,spd:1.08,rw:2.2,sg:100,hard:true,d:'Osobny tryb. Zamek ma tylko 1 HP: jeden kosmita, który dotrze do zamku, kończy run. Awanse zamku (karty) odbierasz dopiero po fali, karty leczące są wyłączone. Wrogowie są trochę słabsi niż na Trudnym, a start daje +100 złota. Nagrody ×2,2.'}
+  easy:{n:'Łatwy',hp:.85,cnt:1,spd:1,rw:.7,d:'Dla początkujących: najsłabsi wrogowie, normalna liczba w falach. Nagrody (kryształy i XP zamku) ×0,7.'},
+  normal:{n:'Normalny',hp:1.75,cnt:1.2,spd:1.05,rw:1,d:'Wyrównana walka: fale szybko rosną w siłę, wrogów jest o 20% więcej i są trochę szybsi. Wymaga rozsądnego budowania i wyboru ulepszeń. Nagrody ×1.'},
+  hard:{n:'Trudny',hp:2.15,cnt:1.4,spd:1.1,rw:1.5,d:'Dla doświadczonych: wrogowie mają ponad 2 razy więcej HP niż na Łatwym, jest ich o 40% więcej i są szybsi. Nagrody ×1,5.'},
+  hardcore:{n:'Hardcore',hp:1.5,cnt:1.25,spd:1.08,rw:2.2,sg:100,hard:true,d:'Osobny tryb. Zamek ma tylko 1 HP: jeden kosmita, który dotrze do zamku, kończy run. Karty leczące są wyłączone. Wrogowie są trochę słabsi niż na Trudnym, a start daje +100 złota. Nagrody ×2,2.'}
 };
 var SLOTVAR=[[1,1.15,.9,1],[.9,1,1,1.1],[1.1,1.1,.95,1.08],[1,.95,1.15,1],[.95,1.1,1,.95],[1.05,1.05,.9,1.1],[1.1,.95,1.1,1]];
 var CBASE={china:[1,1,1,1.05],germany:[1.05,1.1,.92,1],bears:[.9,.9,1.12,1],cartel:[.88,1,1,.92],slavs:[1,1.12,1,.9],cyber:[1.1,1,1.15,1],egypt:[1.1,1,.95,1.1],rasta:[.92,1,1.1,1]};
@@ -912,6 +961,7 @@ function setTheme(cs){
   if(de&&de.style&&de.style.setProperty)de.style.setProperty('--accent',cs.acc);
 }
 function newRun(){
+  if(S&&S.live&&!S.result)logRun('abandon');
   var cs=castleById(meta.castle),cl=cxOf(cs.id).lv-1,k;
   var D=DIFF[meta.diff]||DIFF.normal,hc=!!D.hard;
   var hp=hc?1:Math.max(8,20+3*ml('hp')+(cs.hp||0)+cl);
@@ -923,7 +973,7 @@ function newRun(){
     mods:{hdmg:1+.08*ml('dmg')+.02*cl,hrate:1,hrange:0,hspeed:1,tdmg:1,trate:1,trange:1,gold:1,xp:1+.1*ml('xp'),crit:0,multi:0,cdr:1,aura:0,cost:1-.04*ml('cost'),nova:0,regen:0},
     items:[],skills:{q:0,e:0,r:0},cds:{q:0,e:0,r:0},buffT:0,rBuff:1,
     speed:1,sel:null,build:null,pending:[],rq:[],lvCards:null,lvOpen:false,lvKind:null,live:false,kills:0,score:0,rankPos:0,bosses:0,time:0,result:null,cards:null,earned:0,
-    shake:0,hit:0,banner:null,seed:Math.floor(Math.random()*1e9),cxGain:null,bg:null,diff:D,did:DIFF[meta.diff]?meta.diff:'normal',hc:hc,tinfo:null,skin:null
+    shake:0,hit:0,banner:null,seed:Math.floor(Math.random()*1e9),cxGain:null,bg:null,log:logNew(cl+1),diff:D,did:DIFF[meta.diff]?meta.diff:'normal',hc:hc,tinfo:null,skin:null
   };
   for(k in cs.mods){if(ADDK[k])S.mods[k]+=cs.mods[k];else S.mods[k]*=cs.mods[k]}
   S.skills[cs.start]=1;
@@ -959,13 +1009,13 @@ function tryBuild(c,r){
   if(S.gold<cost)return;
   S.gold-=cost;
   var t={type:S.build,c:c,r:r,x:c*T+T/2,y:r*T+T/2,cd:rnd(0,.3),spent:cost,ang:-Math.PI/2,rec:0,ramp:0,lt:null};
-  S.towers.push(t);S.sel=t;
+  S.towers.push(t);S.sel=t;S.log.bd.push([S.wave,t.type,c,r,0]);
   S.fx.push({k:'ring',x:t.x,y:t.y,r:4,max:24,t:0,life:.3,color:tinfo(t.type).col});
   sparks(t.x,t.y,tinfo(t.type).col,6);
 }
 function sellTower(t){
   if(!t)return;
-  S.gold+=Math.floor(t.spent*.7);
+  S.gold+=Math.floor(t.spent*.7);S.log.bd.push([S.wave,t.type,t.c,t.r,1]);
   sparks(t.x,t.y,'#8c9ba7',6);
   S.towers=S.towers.filter(function(x){return x!==t});
   if(S.sel===t)S.sel=null;
@@ -989,11 +1039,12 @@ function startWave(){
   if(S.modal||S.phase!=='build')return;
   S.wave++;S.phase='wave';S.spawnQ=genWave(S.wave);S.spawnT=.8;S.sel=null;
   var boss=S.wave%5===0,bb=BOSS[Math.min(BOSS.length,Math.max(1,Math.round(S.wave/5)))-1];
+  logWaveStart();
   S.banner={text:boss?'Fala '+S.wave+' · '+bb.n+' nadlatuje!':'Fala '+S.wave,t:0,life:1.7,boss:boss};
 }
 function spawn(type){
   var d=ENEMY[type],w=S.wave,bd=null;
-  var hpMul=(1+(w-1)*.42+Math.pow(w,1.5)*.035)*S.diff.hp;
+  var hpMul=(1+(w-1)*.55+Math.pow(w,1.7)*.05)*S.diff.hp;
   if(type==='boss'){hpMul*=1+(w/5-1)*.6;bd=BOSS[Math.min(BOSS.length,Math.max(1,Math.round(w/5)))-1];d=bd}
   var p=pathPos(0);
   S.enemies.push({bid:bd?bd.id:null,bn:bd?bd.n:null,dg:0,type:type,x:p.x,y:p.y,d:0,hp:d.hp*hpMul,max:d.hp*hpMul,spd:d.spd*S.diff.spd,r:d.r,gold:d.gold,xp:d.xp,pts:d.pts||PTS[type]||10,dmg:d.dmg,color:d.color,sl:1,slowT:0,poisT:0,pd:0,flash:0,dead:false,ph:rnd(0,TAU),acc:0,tn:0});
@@ -1134,7 +1185,7 @@ function update(dt){
     if(e.poisT>0){e.poisT-=dt;dealDamage(e,e.pd*dt,true);if(e.dead)continue}
     e.d+=e.spd*m*dt;
     if(e.d>=S.path.len){
-      e.dead=true;S.baseHp-=e.dmg;S.shake=Math.max(S.shake,.25);S.hit=.4;
+      e.dead=true;S.log.lk++;S.baseHp-=e.dmg;S.shake=Math.max(S.shake,.25);S.hit=.4;
       S.fx.push({k:'ring',x:e.x,y:e.y,r:4,max:36,t:0,life:.35,color:'#ff6b6b'});
       S.fx.push({k:'txt',x:h.x,y:h.y-30,vy:-26,t:0,life:.8,text:'-'+e.dmg,color:'#ff6b6b',size:13});
       continue;
@@ -1218,7 +1269,7 @@ function update(dt){
 
   if(S.baseHp<=0){endRun(false);return}
   if(S.phase==='wave'&&!S.spawnQ.length&&!S.enemies.length){
-    S.gold+=20+5*S.wave;S.phase='build';S.shots=[];
+    S.gold+=20+5*S.wave;S.phase='build';S.shots=[];logWaveEnd();
     if(S.mods.regen)S.baseHp=Math.min(S.baseMax,S.baseHp+S.mods.regen);
     if(S.wave>=MAXWAVE){endRun(true);return}
     S.rq.push({k:'wave',w:S.wave});
@@ -1280,7 +1331,7 @@ function openCards(kind){
   if(!cards.length)return;
   S.cards={kind:kind,list:cards};S.modal='cards';renderOverlay();
 }
-function rqOk(it){return it.k==='wave'||!S.hc||S.phase==='build'}
+function rqOk(it){return it.k==='wave'||S.phase==='build'}
 /* Pierwszy dostępny wpis kolejki nagród (danego rodzaju, jeśli podano: 'level' lub 'wave') */
 function rqFind(kind){for(var i=0;i<S.rq.length;i++)if((!kind||S.rq[i].k===kind)&&rqOk(S.rq[i]))return i;return -1}
 function rqFirst(){return rqFind()}
@@ -1299,7 +1350,7 @@ function lvToggle(kind){
 }
 function lvPick(i){
   if(!S||!S.lvOpen||!S.lvCards||!S.lvCards[i])return;
-  var c=S.lvCards[i],ix=rqFind(S.lvKind);c.ap();
+  var c=S.lvCards[i],ix=rqFind(S.lvKind);S.log.pk.push([S.wave,S.lvKind,c.id,S.hero.lvl]);c.ap();
   if(c.k==='item')S.items.push(c.id);
   S.lvCards=null;if(ix>=0)S.rq.splice(ix,1);S.lvOpen=false;lvKey='';ui();
 }
@@ -1313,10 +1364,13 @@ function updateLvl(){
   if(key===lvKey)return;lvKey=key;
   LVG.forEach(function(g){
     var w=$(g.w),b=$(g.b),pn=$(g.p),n=cnt[g.k],show=!S.modal&&n>0,isW=g.k==='wave';
+    var ix=rqFind(g.k),ok=ix>=0,open=show&&S.lvOpen&&S.lvKind===g.k;
+    w.className='lvwrap '+(isW?'L':'R')+(open?' open':'');
     w.hidden=!show;if(!show){pn.hidden=true;return}
-    var ix=rqFind(g.k),ok=ix>=0,open=S.lvOpen&&S.lvKind===g.k;
     b.className='lvbtn'+(ok?'':' lock')+(open?' open':'');
-    b.textContent=ok?(isW?'⚔ Nagroda za falę':'★ Awans zamku')+(n>1?' ×'+n:'')+(open?' · zwiń':' · wybierz'+(ix===rqFirst()?' (Enter)':'')):'★ Awans po fali'+(n>1?' ×'+n:'');
+    b.textContent=isW?'⚔':'★';b.setAttribute('data-n',String(n));
+    var tip=ok?(isW?'Nagroda za falę':'Awans zamku')+(open?' · zwiń':' · wybierz'+(ix===rqFirst()?' (Enter)':'')):'Awans zamku: wybór dostępny po zakończeniu fali';
+    b.title=tip;b.setAttribute('aria-label',tip+(n>1?' (×'+n+')':''));
     pn.hidden=!(open&&S.lvCards);
     if(pn.hidden)return;
     var it=S.rq[ix];
@@ -1333,7 +1387,7 @@ function updateLvl(){
 }
 function pickCard(i){
   if(S.modal!=='cards'||!S.cards||!S.cards.list[i])return;
-  var c=S.cards.list[i];c.ap();
+  var c=S.cards.list[i];S.log.pk.push([S.wave,S.cards.kind,c.id,S.hero.lvl]);c.ap();
   if(c.k==='item')S.items.push(c.id);
   S.cards=null;S.modal=null;renderOverlay();
 }
@@ -1348,6 +1402,7 @@ function endRun(win){
   S.cxGain={gain:gain,from:from,to:c.lv};
   S.rankPos=S.score>0?rankAdd(S.did,{n:nickOf(),c:S.castle.id,s:S.score,w:S.wave,v:win?1:0,k:S.kills}):0;
   saveMeta();
+  logRun(win?'win':S.quit?'quit':'lose');
   S.modal='end';renderOverlay();
 }
 
@@ -1576,6 +1631,15 @@ function paintPreviews(){
     drawCastle(g,c,44,54,1.55,clock+1,{ang:-.5,rec:0,hit:0,low:false});
   });
 }
+/* Zgłaszanie błędów: otwiera nowe zgłoszenie (issue) w repozytorium na GitHubie z wypełnionym opisem i podstawowymi danymi z gry (bez nicku). */
+var BUGREPO='https://github.com/Barel0/ostatni-bastion/issues/new';
+var bugText='';
+function bugUrl(){
+  var d=bugText.trim()||'(brak opisu)',first=d.split('\n')[0].slice(0,70);
+  var info=['Zamek: '+(S?S.castle.n:'?'),'Poziom trudności: '+(S?S.diff.n:'?'),'Fala: '+(S?S.wave+'/'+MAXWAVE:'?'),'Punkty: '+(S?S.score:'?'),'Przeglądarka: '+(typeof navigator!=='undefined'?navigator.userAgent:'?')].join('\n');
+  return BUGREPO+'?title='+encodeURIComponent('Błąd: '+first)+'&body='+encodeURIComponent(d+'\n\n---\n'+info);
+}
+function bugClose(){if(!S||S.modal!=='bug')return;S.modal=S.bugPrev||null;renderOverlay();ui()}
 var rankTab=null;
 var MODES={
   tournament:{n:'Tournament',d:'Tryb w przygotowaniu. Zasady i nagrody ustalimy później.'},
@@ -1636,10 +1700,12 @@ function renderOverlay(){
       '<button type="button" class="btn ghost big mystery" data-act="go-secret">???</button></div>'+
       '<div class="cur">Zamek: '+castleById(meta.castle).n+' · Poziom trudności: '+(DIFF[meta.diff]||DIFF.normal).n+'</div></div>';
   }else if(S.modal==='rank'){
-    o.innerHTML='<div class="pan"><button type="button" class="btn sm ghost back" data-act="go-title">← Menu</button><h2>Ranking najlepszych wyników</h2><p>Punkty dostajesz za każdego pokonanego kosmitę (Zielonek 10, Spodek 12, Rój 4, Pancernik 30, bossowie 500–1000). Każdy poziom trudności ma osobną tabelę z '+RANKMAX+' najlepszymi wynikami.</p>'+rankHTML()+'</div>';
+    o.innerHTML='<div class="pan"><button type="button" class="btn sm ghost back" data-act="go-title">← Menu</button><h2>Ranking najlepszych wyników</h2><p>Punkty dostajesz za każdego pokonanego kosmitę (Zielonek 10, Spodek 12, Rój 4, Pancernik 30, bossowie 500–1000). Każdy poziom trudności ma osobną tabelę z '+RANKMAX+' najlepszymi wynikami.</p>'+rankHTML()+'<h3>Zapis gier</h3><p>Każdy run (przebieg fal, budowy, wybrane karty, wynik) zapisuje się tylko w tej przeglądarce, bez nicku. Zapisane gry: <b>'+loadRuns().length+'</b>. Możesz pobrać je jako plik JSON do analizy balansu.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn sm" data-act="export-runs">Pobierz zapis gier</button><button type="button" class="btn sm ghost" data-act="clear-runs">Wyczyść zapis</button></div></div>';
   }else if(S.modal==='mode'){
     var md=MODES[S.modeId]||MODES.tournament;
     o.innerHTML='<div class="pan"><button type="button" class="btn sm ghost back" data-act="go-title">← Menu</button><h2>'+md.n+'</h2><p>'+md.d+'</p></div>';
+  }else if(S.modal==='bug'){
+    o.innerHTML='<div class="pan" style="align-items:center"><div class="dlg bug" role="dialog" aria-modal="true"><h2>Zgłoś błąd</h2><p>Opisz, co poszło nie tak i co robiłeś tuż przed błędem. Otworzy się nowe zgłoszenie na GitHubie (potrzebne konto), gdzie możesz je jeszcze poprawić przed wysłaniem. Gra jest wstrzymana.</p><textarea id="bugtxt" maxlength="1500" placeholder="Opis błędu...">'+esc(bugText)+'</textarea><small>Do zgłoszenia dołączymy: zamek, poziom trudności, falę, punkty i nazwę przeglądarki. Nick nie jest dołączany.</small><div class="row"><a class="btn" id="bugsend" data-act="bug-sent" href="'+esc(bugUrl())+'" target="_blank" rel="noopener">Otwórz na GitHubie</a><button type="button" class="btn ghost" data-act="bug-close">Anuluj</button></div></div></div>';
   }else if(S.modal==='secret'){
     o.innerHTML='<div class="pan" style="align-items:center"><div class="dlg" role="dialog" aria-modal="true"><b>BO KOCIEJ MORDY DOSTANIESZ!</b><button type="button" class="btn" data-act="go-title">OK</button></div></div>';
   }else if(S.modal==='shop'){
@@ -1648,7 +1714,7 @@ function renderOverlay(){
     o.innerHTML='<div class="pan help"><button type="button" class="btn sm ghost back" data-act="go-title">← Menu</button><h2>Jak grać</h2>'+
       '<ul style="margin:0;padding-left:18px"><li><b>Cel:</b> utrzymaj zamek przez '+MAXWAVE+' fal. Kosmici idą ścieżką, a każdy, który dotrze do zamku, zabiera mu HP.</li>'+
       '<li><b>Wieże:</b> klawisze 1–8 lub pasek na dole, klik pola buduje, klik wieży sprzedaje. Strzelec jest startowy, resztę 7 wież zna tylko Twój zamek.</li>'+
-      '<li><b>Awans zamku:</b> za zabójstwa dostajesz XP. Po awansie i po każdej odparte fali (ulepszenie wież) w prawym górnym rogu pojawia się przycisk (albo Enter), który otwiera kartę wyboru bez zatrzymywania gry.</li>'+
+      '<li><b>Awans zamku:</b> za zabójstwa dostajesz XP. Po awansie zamku (ikona ★ w prawym górnym rogu) i po każdej odpartej fali (ikona ⚔ w lewym górnym rogu, ulepszenie wież) pojawia się mała ikona z licznikiem. Kliknij ją (albo Enter), żeby wybrać kartę. Wybór za awans zamku jest dostępny dopiero po zakończeniu fali, a nagrodę za falę możesz odebrać zawsze.</li>'+
       '<li><b>Po fali:</b> nagroda to ulepszenie wież, które działa na wszystkie wieże danego typu. Odbierasz ją, kiedy chcesz.</li>'+
       '<li><b>Bossowie co 5 fal:</b> Al Husain Wisimulaha (spowalnia wieże w zasięgu 5 kratek), Skurvvinox (unika pocisków, wrażliwy na spowolnienia i lasery) i Bóg Kosmitów (najsilniejszy, wskrzesza się raz).</li>'+
       '<li><b>Skróty:</b> Spacja start fali, F prędkość gry, Esc anuluj budowę.</li></ul></div>';
@@ -1702,6 +1768,11 @@ document.addEventListener('click',function(ev){
   else if(a==='go-shop'){S.modal='shop';renderOverlay()}
   else if(a==='go-help'){S.modal='help';renderOverlay()}
   else if(a==='resume')resumeRun();
+  else if(a==='export-runs')exportRuns();
+  else if(a==='clear-runs'){if(typeof confirm!=='function'||confirm('Usunąć zapis wszystkich zapisanych gier?')){try{localStorage.removeItem(RUNKEY)}catch(e){}renderOverlay()}}
+  else if(a==='bug'){if(S.modal!=='bug'){quitStop();S.bugPrev=S.modal;S.modal='bug';renderOverlay()}}
+  else if(a==='bug-close')bugClose();
+  else if(a==='bug-sent')setTimeout(function(){bugText='';bugClose()},0);
   else if(a==='go-rank'){rankTab=meta.diff;S.modal='rank';renderOverlay()}
   else if(a==='rank-tab'){rankTab=el.getAttribute('data-id');renderOverlay()}
   else if(a==='go-mode'){S.modeId=el.getAttribute('data-id');S.modal='mode';renderOverlay()}
@@ -1722,7 +1793,9 @@ document.addEventListener('click',function(ev){
   }
 });
 document.addEventListener('input',function(ev){
-  var t=ev.target;if(!t||t.id!=='nick')return;
+  var t=ev.target;if(!t)return;
+  if(t.id==='bugtxt'){bugText=String(t.value||'').slice(0,1500);var a=$('bugsend');if(a)a.href=bugUrl();return}
+  if(t.id!=='nick')return;
   meta.nick=String(t.value||'').slice(0,NICKMAX);saveMeta();
 });
 /* Pełny ekran: przeglądarka pozwala wejść w niego tylko po geście użytkownika, więc włączamy go przy pierwszym kliknięciu lub klawiszu. Przycisk ⛶ przełącza go ręcznie. */
@@ -1751,7 +1824,7 @@ function quitStop(){clearTimeout(quitT);quitT=0;$('quit').classList.remove('hold
 function quitStart(){
   if(!S||S.modal||quitT)return;
   $('quit').classList.add('hold');
-  quitT=setTimeout(function(){quitT=0;$('quit').classList.remove('hold');if(S&&!S.modal)endRun(false)},QUITMS);
+  quitT=setTimeout(function(){quitT=0;$('quit').classList.remove('hold');if(S&&!S.modal){S.quit=true;endRun(false)}},QUITMS);
 }
 (function(){
   var q=$('quit');
@@ -1769,6 +1842,7 @@ document.addEventListener('keydown',function(ev){
   if(!S||ev.ctrlKey||ev.metaKey||ev.altKey)return;
   var k=ev.key.toLowerCase();
   if(S.modal==='cards'){if(k>='1'&&k<='3')pickCard(+k-1);return}
+  if(k==='escape'&&S.modal==='bug'){bugClose();return}
   if(k==='escape'&&(S.modal==='rank'||S.modal==='mode'||S.modal==='secret')){S.modal='title';renderOverlay();return}
   if(S.modal)return;
   if(k==='enter'){ev.preventDefault();lvToggle();return}
