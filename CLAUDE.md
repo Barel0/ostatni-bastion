@@ -12,7 +12,11 @@ Tower defence z elementami roguelike. Stały zamek na końcu ścieżki (pasywne 
 - Nagrody (awans zamku i nagroda za falę) trafiają do kolejki `S.rq` i są odbierane w popupie w prawym górnym rogu (Enter lub klik), bez pauzy gry.
 - Trudność w `DIFF`: easy/normal/hard oraz osobny hardcore (1 HP zamku, awanse tylko po fali, zamek płonie cały czas).
 - Bossowie w `BOSS`: Al Husain Wisimulaha (spowalnia wieże w promieniu 5 kratek), Skurvvinox (unik pocisków, wrażliwy na spowolnienia i lasery), Bóg Kosmitów (najsilniejszy, jedno wskrzeszenie na 50% HP; jego statystyki są tymczasowe i do omówienia).
-- Zapis stały w `localStorage` pod kluczem `bib-meta` (kryształy, poziomy ulepszeń, XP zamków, wybrany zamek i trudność).
+- Zapis stały w `localStorage` pod kluczem `bib-meta` (kryształy, poziomy ulepszeń, XP zamków, wybrany zamek i trudność, `nick` gracza i `rank` czyli top 10 wyników osobno dla każdej trudności).
+- Punkty rankingowe dostaje się za zabójstwa (`PTS` oraz `pts` w `BOSS`), wynik trafia do rankingu w `endRun`.
+- Popupy nagród: awans zamku (prawy górny róg) i nagroda za falę (lewy górny róg) to dwa osobne okienka (`LVG`, `lvToggle(kind)`), baner fali jest na środku.
+- Przycisk „Zakończ grę” działa po przytrzymaniu 3 s (bez potwierdzenia). Żółty przycisk wyjścia pod prędkością (`exitToMenu`) pauzuje grę i otwiera menu startowe; run można wznowić („Wznów grę”, `S.live`).
+- Menu startowe ma też Ranking, Tournament i Dominion (na razie puste, `MODES`) oraz „???”. Pełny ekran włącza się przy pierwszym kliknięciu lub klawiszu (przeglądarki wymagają gestu) i przyciskiem ⛶.
 
 ## Treści wrażliwe
 Zamek niemiecki ma neutralną stylistykę wojskową bez symboli historycznych, kartel jest fikcyjną kreskówkową haciendą, Rasta używa szacunkowych motywów (lew, czerwień-złoto-zieleń). Zachowaj ten ton.

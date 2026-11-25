@@ -78,8 +78,14 @@ button{font:inherit;color:var(--text);cursor:pointer}
 .btn:hover{filter:brightness(1.08)} .btn:disabled{background:var(--line);color:var(--muted);cursor:default;filter:none}
 .col{display:flex;flex-direction:column;gap:6px}
 .btn.red{background:#c0352b;color:#fff}
-.btn.red.arm{background:#ff3b2f;animation:pulse .6s infinite alternate}
-@keyframes pulse{to{filter:brightness(1.35)}}
+.btn.red{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;gap:1px;user-select:none;-webkit-user-select:none;touch-action:none}
+.btn.red small{font:600 10px var(--body);letter-spacing:.04em;text-transform:none;opacity:.8}
+.btn.red::after{content:"";position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(255,255,255,.35);pointer-events:none}
+.btn.red.hold::after{width:100%;transition:width 3s linear}
+#spd{flex:1}
+.btn.ghost.exit{display:flex;align-items:center;justify-content:center;color:#ffd23e;border-color:#ffd23e;padding:6px 10px}
+.btn.ghost.exit:hover:not(:disabled){background:rgba(255,210,62,.14);border-color:#ffd23e}
+.btn.ghost.exit:disabled{opacity:.4}
 .ov.title{background:radial-gradient(ellipse at 50% 40%,rgba(8,11,14,.62),rgba(8,11,14,.94))}
 .ttl{align-items:center;text-align:center;gap:16px}
 .logo{font:700 52px/.95 var(--display);letter-spacing:.08em;color:var(--accent);text-shadow:0 0 28px var(--accent),0 2px 0 #000;margin-top:8px}
@@ -93,13 +99,19 @@ button{font:inherit;color:var(--text);cursor:pointer}
 .card .lv{align-self:center;font:700 12px var(--display);letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
 .help li{margin:0 0 6px;line-height:1.45;color:var(--muted)}
 .help li b{color:var(--text)}
-.lvwrap{position:absolute;top:10px;right:10px;z-index:3;display:flex;flex-direction:column;align-items:flex-end;gap:6px;max-width:min(300px,60%)}
+/* Popupy nagród: awans zamku (prawy górny róg, złoty) i nagroda za falę (lewy górny róg, niebieski). Baner fali jest na środku, więc nic na siebie nie nachodzi. */
+.lvwrap{position:absolute;top:10px;z-index:3;display:flex;flex-direction:column;gap:6px;width:clamp(190px,27%,260px);--pc:var(--accent)}
+.lvwrap.R{right:10px;align-items:flex-end}
+.lvwrap.L{left:10px;align-items:flex-start;--pc:var(--frost)}
 .lvwrap[hidden]{display:none}
-.lvbtn{background:var(--accent);color:#14100a;border:0;border-radius:18px;padding:7px 14px;font:700 13px var(--display);letter-spacing:.04em;box-shadow:0 0 0 0 var(--accent);animation:lvp 1.4s infinite}
+.lvbtn{background:var(--pc);color:#14100a;border:0;border-radius:18px;padding:7px 14px;font:700 13px var(--display);letter-spacing:.04em;box-shadow:0 0 0 0 var(--pc);animation:lvp 1.4s infinite;max-width:100%}
 .lvbtn.lock{background:var(--panel2);color:var(--muted);animation:none;border:1px solid var(--line)}
-.lvbtn.open{animation:none;box-shadow:0 0 12px var(--accent)}
+.lvbtn.open{animation:none;box-shadow:0 0 12px var(--pc)}
 @keyframes lvp{0%{box-shadow:0 0 0 0 rgba(255,255,255,.5)}70%{box-shadow:0 0 0 10px rgba(255,255,255,0)}100%{box-shadow:0 0 0 0 rgba(255,255,255,0)}}
-.lvpan{width:100%;display:flex;flex-direction:column;gap:6px;background:rgba(13,18,23,.92);border:1px solid var(--line);border-radius:8px;padding:8px;backdrop-filter:blur(2px)}
+.lvpan{width:100%;display:flex;flex-direction:column;gap:6px;background:rgba(13,18,23,.92);border:1px solid var(--pc);border-left-width:4px;border-radius:8px;padding:8px;backdrop-filter:blur(2px)}
+.lvpan[hidden]{display:none}
+.lvwrap.L .lvpan h4{color:var(--frost)}
+.lvwrap.R .lvpan h4{color:var(--accent)}
 .lvpan h4{margin:0 0 2px;font:700 12px var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .lvpan .card{min-height:0;padding:8px 10px 8px 10px;gap:2px}
 .lvpan .card.tc{flex-direction:row;align-items:center;gap:10px}
@@ -134,6 +146,43 @@ button{font:inherit;color:var(--text);cursor:pointer}
 .slot.f{border-style:solid;color:var(--text);border-color:var(--muted)}
 .slot.r1{border-color:var(--rare)} .slot.r2{border-color:var(--epic)}
 .hint{font-size:12px}
+.fsb{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:4px 9px;font:700 14px var(--display);line-height:1.2}
+.fsb:hover{border-color:var(--text)}
+.hud .rt{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px}
+/* Pełny ekran: plansza dopasowana do wysokości okna */
+html:fullscreen #app{max-width:none;padding:8px 14px 10px;gap:8px}
+html:fullscreen .board{width:min(100%,calc((100vh - 250px)*1.6667));margin:0 auto}
+html:-webkit-full-screen #app{max-width:none;padding:8px 14px 10px;gap:8px}
+html:-webkit-full-screen .board{width:min(100%,calc((100vh - 250px)*1.6667));margin:0 auto}
+/* Ranking */
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.rk{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.rk th{font:700 11px var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left;padding:4px 8px;border-bottom:1px solid var(--line)}
+.rk td{padding:5px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+.rk td.n{text-align:right;font-family:var(--display);font-weight:700}
+.rk .pl{width:32px;color:var(--muted);font:700 14px var(--display)}
+.rk tr.top1 .pl{color:#ffd35a}
+.rk tr.me{background:rgba(255,255,255,.05)}
+.rk .who{display:flex;align-items:center;gap:9px}
+.rk .who canvas{width:40px;height:40px;flex:none;border-radius:6px;background:var(--panel);border:2px solid var(--ca,var(--line))}
+.rk .who div{display:flex;flex-direction:column;gap:1px;min-width:0}
+.rk .who b{font:700 14px var(--display);color:var(--ca,var(--text));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rk .who small{color:var(--muted);font-size:11px}
+.nickrow{display:flex;align-items:center;gap:8px;justify-content:center;font-size:12px;color:var(--muted)}
+.nickrow input{background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--text);font:700 14px var(--display);padding:6px 10px;width:170px;text-align:center}
+.nickrow input:focus{border-color:var(--accent);outline:none}
+.ov.title .mm{width:min(500px,100%);display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ov.title .mm .btn{padding:11px 14px;font-size:14px}
+.ov.title .mm .btn:not(.ghost) span{color:#14100a;opacity:.7;font-size:12px}
+.ov.title .mm .btn.wide{grid-column:1/-1}
+.ov.title .mm .btn:first-child{grid-column:1/-1;padding:14px 18px;font-size:17px}
+.ov.title .logo{font-size:44px}
+.ov.title .ttl{gap:12px}
+.mm .btn.mode{display:flex;align-items:center;justify-content:space-between}
+.mm .btn.mode span{color:var(--muted);font-size:11px;letter-spacing:.06em}
+.mm .btn.mystery{border-style:dashed}
+.dlg{background:var(--panel);border:2px solid var(--accent);border-radius:12px;padding:26px 30px;box-shadow:0 0 40px rgba(0,0,0,.6);text-align:center;display:flex;flex-direction:column;gap:18px;align-items:center;max-width:min(520px,100%)}
+.dlg b{font:700 28px/1.2 var(--display);color:var(--accent);text-wrap:balance}
 @media (max-width:640px){.cards{grid-template-columns:1fr}.card{min-height:0}.meta{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -142,11 +191,12 @@ button{font:inherit;color:var(--text);cursor:pointer}
 <div id="app">
   <header class="hud">
     <h1>Ostatni Bastion <small id="cname"></small></h1>
-    <div class="stats" id="stats"></div>
+    <div class="rt"><div class="stats" id="stats"></div><button class="fsb" id="fs" type="button" title="Pełny ekran">⛶</button></div>
   </header>
   <div class="board">
     <canvas id="cv" aria-label="Plansza gry"></canvas>
-    <div class="lvwrap" id="lvw" hidden><button type="button" class="lvbtn" id="lvb" data-act="lv-toggle"></button><div class="lvpan" id="lvp" hidden></div></div>
+    <div class="lvwrap L" id="lvww" hidden><button type="button" class="lvbtn" id="lvwb" data-act="lv-toggle" data-k="wave"></button><div class="lvpan" id="lvwp" hidden></div></div>
+    <div class="lvwrap R" id="lvw" hidden><button type="button" class="lvbtn" id="lvb" data-act="lv-toggle" data-k="level"></button><div class="lvpan" id="lvp" hidden></div></div>
     <div class="ov" id="ov" hidden></div>
   </div>
   <section class="bar">
@@ -155,9 +205,12 @@ button{font:inherit;color:var(--text);cursor:pointer}
     <div class="grp">
       <div class="col">
         <button class="btn" id="go" type="button">Start fali</button>
-        <button class="btn red" id="quit" type="button" title="Zakończ rozgrywkę i odbierz nagrody za dotychczasowy postęp">Zakończ grę</button>
+        <button class="btn red" id="quit" type="button" title="Przytrzymaj 3 sekundy, aby zakończyć rozgrywkę i odebrać nagrody za dotychczasowy postęp"><span>Zakończ grę</span><small>przytrzymaj 3 s</small></button>
       </div>
-      <button class="btn ghost" id="spd" type="button" title="Prędkość gry (F)">x1</button>
+      <div class="col">
+        <button class="btn ghost" id="spd" type="button" title="Prędkość gry (F)">x1</button>
+        <button class="btn ghost exit" id="exit" type="button" title="Wyjdź do menu startowego (gra zostanie wstrzymana)" aria-label="Wyjdź do menu startowego"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
+      </div>
     </div>
   </section>
   <section class="info">
@@ -191,8 +244,19 @@ var META=[
   {id:'xp',n:'Mądrość',d:'+10% XP zamku w runie',max:5,c:function(l){return 10+l*8}},
   {id:'cost',n:'Inżynieria',d:'-4% kosztu wież',max:5,c:function(l){return 12+l*8}}
 ];
-var meta={crystals:0,lv:{},castle:'china',cx:{},diff:'normal'};
-function loadMeta(){try{var j=JSON.parse(localStorage.getItem('bib-meta')||'null');if(j&&typeof j.crystals==='number'){meta=j;meta.lv=meta.lv||{};meta.cx=meta.cx||{};meta.castle=meta.castle||'china';meta.diff=meta.diff||'normal'}}catch(e){}}
+var meta={crystals:0,lv:{},castle:'china',cx:{},diff:'normal',nick:'',rank:{}};
+var RANKMAX=10,NICKMAX=14;
+function loadMeta(){try{var j=JSON.parse(localStorage.getItem('bib-meta')||'null');if(j&&typeof j.crystals==='number'){meta=j;meta.lv=meta.lv||{};meta.cx=meta.cx||{};meta.castle=meta.castle||'china';meta.diff=meta.diff||'normal';meta.nick=typeof meta.nick==='string'?meta.nick:'';meta.rank=meta.rank||{}}}catch(e){}}
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function nickOf(){return (meta.nick||'').trim().slice(0,NICKMAX)||'Gracz'}
+function rankList(d){return (meta.rank[d]=meta.rank[d]||[])}
+/* Zapisuje wynik w rankingu danego poziomu trudności; zwraca miejsce (1..RANKMAX) albo 0, gdy wynik nie załapał się do tabeli. */
+function rankAdd(d,e){
+  var l=rankList(d);l.push(e);
+  l.sort(function(a,b){return b.s-a.s});
+  if(l.length>RANKMAX)l.length=RANKMAX;
+  var p=l.indexOf(e);return p<0?0:p+1;
+}
 function saveMeta(){try{localStorage.setItem('bib-meta',JSON.stringify(meta))}catch(e){}}
 function ml(id){return meta.lv[id]||0}
 function cxOf(id){var c=meta.cx[id];if(!c){c=meta.cx[id]={xp:0,lv:1}}return c}
@@ -248,10 +312,12 @@ var ENEMY={
   boss:{n:'Statek-matka',hp:900,spd:26,gold:90,xp:60,dmg:6,r:18,color:'#c9ff5a'}
 };
 var BOSS=[
-  {id:'sultan',n:'Al Husain Wisimulaha',t:'Kosmiczny sułtan',hp:1100,spd:16,gold:110,xp:70,dmg:6,r:24,color:'#8bd17a'},
-  {id:'hunter',n:'Skurvvinox',t:'Kosmiczny łowca',hp:700,spd:62,gold:110,xp:70,dmg:6,r:13,color:'#ff4d6d'},
-  {id:'god',n:'Bóg Kosmitów',t:'Szary Zbawiciel',hp:1900,spd:22,gold:160,xp:100,dmg:12,r:22,color:'#cfd6dc'}
+  {id:'sultan',n:'Al Husain Wisimulaha',t:'Kosmiczny sułtan',hp:1100,spd:16,gold:110,xp:70,dmg:6,r:24,color:'#8bd17a',pts:500},
+  {id:'hunter',n:'Skurvvinox',t:'Kosmiczny łowca',hp:700,spd:62,gold:110,xp:70,dmg:6,r:13,color:'#ff4d6d',pts:500},
+  {id:'god',n:'Bóg Kosmitów',t:'Szary Zbawiciel',hp:1900,spd:22,gold:160,xp:100,dmg:12,r:22,color:'#cfd6dc',pts:1000}
 ];
+/* Punkty rankingowe za zabicie wroga (bossowie mają własne w BOSS) */
+var PTS={grunt:10,runner:12,brute:30,swarm:4,boss:500};
 var SULTAN_R=160;
 var CD={q:function(i){return Math.max(3,9.5-1.1*i)},r:function(i){return Math.max(9,19-2*i)}};
 
@@ -856,8 +922,8 @@ function newRun(){
     hero:{x:0,y:0,cd:0,lvl:1,xp:0,need:40,ang:Math.PI,rec:0},
     mods:{hdmg:1+.08*ml('dmg')+.02*cl,hrate:1,hrange:0,hspeed:1,tdmg:1,trate:1,trange:1,gold:1,xp:1+.1*ml('xp'),crit:0,multi:0,cdr:1,aura:0,cost:1-.04*ml('cost'),nova:0,regen:0},
     items:[],skills:{q:0,e:0,r:0},cds:{q:0,e:0,r:0},buffT:0,rBuff:1,
-    speed:1,sel:null,build:null,pending:[],rq:[],lvCards:null,lvOpen:false,kills:0,bosses:0,time:0,result:null,cards:null,earned:0,
-    shake:0,hit:0,banner:null,seed:Math.floor(Math.random()*1e9),cxGain:null,bg:null,diff:D,hc:hc,tinfo:null,skin:null
+    speed:1,sel:null,build:null,pending:[],rq:[],lvCards:null,lvOpen:false,lvKind:null,live:false,kills:0,score:0,rankPos:0,bosses:0,time:0,result:null,cards:null,earned:0,
+    shake:0,hit:0,banner:null,seed:Math.floor(Math.random()*1e9),cxGain:null,bg:null,diff:D,did:DIFF[meta.diff]?meta.diff:'normal',hc:hc,tinfo:null,skin:null
   };
   for(k in cs.mods){if(ADDK[k])S.mods[k]+=cs.mods[k];else S.mods[k]*=cs.mods[k]}
   S.skills[cs.start]=1;
@@ -930,7 +996,7 @@ function spawn(type){
   var hpMul=(1+(w-1)*.42+Math.pow(w,1.5)*.035)*S.diff.hp;
   if(type==='boss'){hpMul*=1+(w/5-1)*.6;bd=BOSS[Math.min(BOSS.length,Math.max(1,Math.round(w/5)))-1];d=bd}
   var p=pathPos(0);
-  S.enemies.push({bid:bd?bd.id:null,bn:bd?bd.n:null,dg:0,type:type,x:p.x,y:p.y,d:0,hp:d.hp*hpMul,max:d.hp*hpMul,spd:d.spd*S.diff.spd,r:d.r,gold:d.gold,xp:d.xp,dmg:d.dmg,color:d.color,sl:1,slowT:0,poisT:0,pd:0,flash:0,dead:false,ph:rnd(0,TAU),acc:0,tn:0});
+  S.enemies.push({bid:bd?bd.id:null,bn:bd?bd.n:null,dg:0,type:type,x:p.x,y:p.y,d:0,hp:d.hp*hpMul,max:d.hp*hpMul,spd:d.spd*S.diff.spd,r:d.r,gold:d.gold,xp:d.xp,pts:d.pts||PTS[type]||10,dmg:d.dmg,color:d.color,sl:1,slowT:0,poisT:0,pd:0,flash:0,dead:false,ph:rnd(0,TAU),acc:0,tn:0});
   S.fx.push({k:'ring',x:p.x,y:p.y,r:3,max:20,t:0,life:.3,color:'#7bff7b'});
 }
 
@@ -957,7 +1023,7 @@ function dealDamage(e,dmg,quiet,crit){
   }
 }
 function kill(e){
-  e.dead=true;S.kills++;
+  e.dead=true;S.kills++;S.score+=e.pts||0;
   if(e.type==='boss'){S.bosses++;S.shake=Math.max(S.shake,.3);S.fx.push({k:'ring',x:e.x,y:e.y,r:5,max:80,t:0,life:.5,color:e.color})}
   S.gold+=Math.round(e.gold*S.mods.gold);
   gainXp(e.xp*S.mods.xp*XPS);
@@ -1215,38 +1281,45 @@ function openCards(kind){
   S.cards={kind:kind,list:cards};S.modal='cards';renderOverlay();
 }
 function rqOk(it){return it.k==='wave'||!S.hc||S.phase==='build'}
-function rqFirst(){for(var i=0;i<S.rq.length;i++)if(rqOk(S.rq[i]))return i;return -1}
-function lvToggle(){
+/* Pierwszy dostępny wpis kolejki nagród (danego rodzaju, jeśli podano: 'level' lub 'wave') */
+function rqFind(kind){for(var i=0;i<S.rq.length;i++)if((!kind||S.rq[i].k===kind)&&rqOk(S.rq[i]))return i;return -1}
+function rqFirst(){return rqFind()}
+function lvToggle(kind){
   if(!S||S.modal||!S.rq.length)return;
-  if(S.lvOpen){S.lvOpen=false;lvKey='';ui();return}
-  var ix=rqFirst();if(ix<0)return;
-  S.lvOpen=true;
+  if(S.lvOpen&&(!kind||kind===S.lvKind)){S.lvOpen=false;lvKey='';ui();return}
+  var ix=rqFind(kind);if(ix<0)return;
+  var it=S.rq[ix];
+  if(S.lvCards&&S.lvKind!==it.k)S.lvCards=null;
+  S.lvOpen=true;S.lvKind=it.k;
   if(!S.lvCards){
-    var it=S.rq[ix];S.lvCards=drawCards(it.k==='wave'?['tower']:['hero','skill','item','eco']);
+    S.lvCards=drawCards(it.k==='wave'?['tower']:['hero','skill','item','eco']);
     if(!S.lvCards.length){S.lvCards=null;S.lvOpen=false;S.rq.splice(ix,1)}
   }
   lvKey='';ui();
 }
 function lvPick(i){
   if(!S||!S.lvOpen||!S.lvCards||!S.lvCards[i])return;
-  var c=S.lvCards[i],ix=rqFirst();c.ap();
+  var c=S.lvCards[i],ix=rqFind(S.lvKind);c.ap();
   if(c.k==='item')S.items.push(c.id);
   S.lvCards=null;if(ix>=0)S.rq.splice(ix,1);S.lvOpen=false;lvKey='';ui();
 }
 var lvKey='';
+var LVG=[{k:'level',w:'lvw',b:'lvb',p:'lvp'},{k:'wave',w:'lvww',b:'lvwb',p:'lvwp'}];
 function updateLvl(){
-  var w=$('lvw'),b=$('lvb'),pn=$('lvp');
-  if(!w||!S)return;
-  var show=!S.modal&&S.rq.length>0,ix=rqFirst(),ok=ix>=0;
-  if(!ok&&S.lvOpen){S.lvOpen=false;S.lvCards=null}
-  var key=[show,S.rq.map(function(r){return r.k}).join(''),S.lvOpen,ok,S.lvCards?S.lvCards.map(function(c){return c.id}).join(','):'',S.hero.lvl].join('|');
+  if(!S||!$('lvw'))return;
+  if(S.lvOpen&&rqFind(S.lvKind)<0){S.lvOpen=false;S.lvCards=null}
+  var cnt={level:0,wave:0};S.rq.forEach(function(r){cnt[r.k]=(cnt[r.k]||0)+1});
+  var key=[!!S.modal,S.rq.map(function(r){return r.k}).join(''),S.phase==='build',S.lvOpen,S.lvKind,S.lvCards?S.lvCards.map(function(c){return c.id}).join(','):'',S.hero.lvl].join('|');
   if(key===lvKey)return;lvKey=key;
-  w.hidden=!show;if(!show){pn.hidden=true;return}
-  var it=ok?S.rq[ix]:S.rq[0],n=S.rq.length,isW=it.k==='wave';
-  b.className='lvbtn'+(ok?'':' lock')+(S.lvOpen?' open':'');
-  b.textContent=ok?(isW?'⚔ Nagroda za falę':'★ Awans zamku')+(n>1?' ×'+n:'')+(S.lvOpen?' · zwiń':' · wybierz (Enter)'):'★ Awans po fali'+(n>1?' ×'+n:'');
-  pn.hidden=!(S.lvOpen&&S.lvCards);
-  if(!pn.hidden){
+  LVG.forEach(function(g){
+    var w=$(g.w),b=$(g.b),pn=$(g.p),n=cnt[g.k],show=!S.modal&&n>0,isW=g.k==='wave';
+    w.hidden=!show;if(!show){pn.hidden=true;return}
+    var ix=rqFind(g.k),ok=ix>=0,open=S.lvOpen&&S.lvKind===g.k;
+    b.className='lvbtn'+(ok?'':' lock')+(open?' open':'');
+    b.textContent=ok?(isW?'⚔ Nagroda za falę':'★ Awans zamku')+(n>1?' ×'+n:'')+(open?' · zwiń':' · wybierz'+(ix===rqFirst()?' (Enter)':'')):'★ Awans po fali'+(n>1?' ×'+n:'');
+    pn.hidden=!(open&&S.lvCards);
+    if(pn.hidden)return;
+    var it=S.rq[ix];
     pn.innerHTML='<h4>'+(isW?'Fala '+it.w+' odparta · ulepsz wieże':'Poziom '+S.hero.lvl+' · wybierz ulepszenie')+' (1–3)</h4>'+S.lvCards.map(function(c,i){
       if(c.tw)return '<button type="button" class="card tc r'+c.r+'" data-act="lv-pick" data-i="'+i+'" title="'+c.d+'"><canvas class="thumb" id="lth-'+i+'" width="112" height="112"></canvas><div><span class="rar">'+RAR[c.r]+' · '+TAG[c.k]+'</span><strong>'+tinfo(c.tw).n+'</strong><span class="lv">Ulepszenie '+c.nl+' / 5</span></div><kbd>'+(i+1)+'</kbd></button>';
       return '<button type="button" class="card r'+c.r+'" data-act="lv-pick" data-i="'+i+'"><span class="rar">'+RAR[c.r]+' · '+TAG[c.k]+'</span><strong>'+c.n+'</strong><span>'+c.d+'</span><kbd>'+(i+1)+'</kbd></button>';
@@ -1256,7 +1329,7 @@ function updateLvl(){
       var gg=cvt.getContext('2d');gg.setTransform(1,0,0,1,0,0);gg.clearRect(0,0,112,112);gg.scale(2,2);
       drawTower(gg,c.tw,28,28,1.45,clock,-Math.PI/2,0,c.nl,0,false,S.skin[c.tw]);
     });
-  }
+  });
 }
 function pickCard(i){
   if(S.modal!=='cards'||!S.cards||!S.cards.list[i])return;
@@ -1266,13 +1339,14 @@ function pickCard(i){
 }
 function endRun(win){
   var cr=Math.round((S.wave*2+S.bosses*5+(win?25:0))*S.diff.rw);
-  S.earned=cr;S.result=win?'win':'lose';meta.crystals+=cr;
+  S.live=false;S.earned=cr;S.result=win?'win':'lose';meta.crystals+=cr;
   var gain=Math.round((S.wave*15+Math.floor(S.kills/4)+S.bosses*25+(win?120:0))*S.diff.rw);
   var c=cxOf(S.castle.id),from=c.lv;
   c.xp+=gain;
   while(c.lv<CXMAX&&c.xp>=cxNeed(c.lv)){c.xp-=cxNeed(c.lv);c.lv++}
   if(c.lv>=CXMAX)c.xp=0;
   S.cxGain={gain:gain,from:from,to:c.lv};
+  S.rankPos=S.score>0?rankAdd(S.did,{n:nickOf(),c:S.castle.id,s:S.score,w:S.wave,v:win?1:0,k:S.kills}):0;
   saveMeta();
   S.modal='end';renderOverlay();
 }
@@ -1404,9 +1478,13 @@ function draw(){
   // baner fali
   if(S.banner){
     var bn=S.banner,al=Math.min(1,bn.t/.25)*Math.min(1,(bn.life-bn.t)/.45),sc=1+.12*(1-Math.min(1,bn.t/.3));
-    g.save();g.translate(CW/2,92);g.scale(sc,sc);g.globalAlpha=al;
-    g.fillStyle='rgba(8,11,14,.55)';rr(g,-190,-24,380,48,8);g.fill();
-    g.fillStyle=bn.boss?'#ff7b5a':S.castle.acc;g.font='700 24px "Chakra Petch",sans-serif';g.textAlign='center';g.textBaseline='middle';
+    // baner jest na środku u góry; boczne popupy nagród mają ~27% szerokości z każdej strony
+    g.save();g.translate(CW/2,34);g.scale(sc,sc);g.globalAlpha=al;
+    var bfs=22,bw0;g.font='700 22px "Chakra Petch",sans-serif';
+    bw0=g.measureText(bn.text).width;if(typeof bw0!=='number')bw0=bn.text.length*12;
+    if(bw0>404){bfs=Math.max(12,Math.floor(22*404/bw0));g.font='700 '+bfs+'px "Chakra Petch",sans-serif';bw0=404}
+    g.fillStyle='rgba(8,11,14,.55)';rr(g,-(bw0+36)/2,-22,bw0+36,44,8);g.fill();
+    g.fillStyle=bn.boss?'#ff7b5a':S.castle.acc;g.textAlign='center';g.textBaseline='middle';
     g.fillText(bn.text,0,1);g.restore();g.globalAlpha=1;
   }
   g.restore();
@@ -1443,6 +1521,7 @@ function ui(){
     '<div class="st"><small>Baza</small><b style="color:'+(S.baseHp<=5?'var(--bad)':'var(--good)')+'">'+Math.max(0,S.baseHp)+'/'+S.baseMax+'</b></div>'+
     '<div class="st"><small>Złoto</small><b style="color:var(--accent)">'+Math.floor(S.gold)+'</b></div>'+
     '<div class="st"><small>Fala</small><b>'+S.wave+'/'+MAXWAVE+'</b></div>'+
+    '<div class="st"><small>Punkty</small><b>'+S.score+'</b></div>'+
     '<div class="st" style="min-width:100px"><small>XP w runie · poz. '+h.lvl+'</small><b>'+pct+'%</b><div class="xpbar"><i style="width:'+pct+'%"></i></div></div>'+
     '<div class="st"><small>Kryształy</small><b style="color:var(--epic)">'+meta.crystals+'</b></div>');
   updateTowerBar();
@@ -1455,7 +1534,8 @@ function ui(){
   var goTxt=S.phase==='build'?'Start fali '+(S.wave+1):'Fala '+S.wave+' w toku';
   if(go.textContent!==goTxt)go.textContent=goTxt;
   go.disabled=S.phase!=='build'||!!S.modal;
-  $('quit').disabled=!!S.modal;
+  $('quit').disabled=!!S.modal;$('exit').disabled=!!S.modal||!!S.result;
+  if(S.modal&&quitT)quitStop();
   $('spd').textContent='x'+S.speed;
   if(S.sel){
     var t=S.sel,st=tstat(t),bd=tinfo(t.type),L=S.tup[t.type];
@@ -1496,6 +1576,30 @@ function paintPreviews(){
     drawCastle(g,c,44,54,1.55,clock+1,{ang:-.5,rec:0,hit:0,low:false});
   });
 }
+var rankTab=null;
+var MODES={
+  tournament:{n:'Tournament',d:'Tryb w przygotowaniu. Zasady i nagrody ustalimy później.'},
+  dominion:{n:'Dominion',d:'Tryb w przygotowaniu. Zasady i nagrody ustalimy później.'}
+};
+function rankHTML(){
+  var tab=DIFF[rankTab]?rankTab:(DIFF[meta.diff]?meta.diff:'normal'),l=rankList(tab),ids=['easy','normal','hard','hardcore'];
+  var h='<div class="tabs">'+ids.map(function(id){
+    return '<button type="button" class="df'+(tab===id?' sel':'')+(id==='hardcore'?' hc':'')+'" data-act="rank-tab" data-id="'+id+'">'+DIFF[id].n+'</button>';
+  }).join('')+'</div>';
+  if(!l.length)return h+'<p>Brak wyników na poziomie „'+DIFF[tab].n+'”. Zagraj run i zdobądź punkty za pokonanych kosmitów.</p>';
+  return h+'<table class="rk"><thead><tr><th>#</th><th>Gracz</th><th class="n" style="text-align:right">Fala</th><th class="n" style="text-align:right">Punkty</th></tr></thead><tbody>'+l.map(function(e,i){
+    var c=castleById(e.c);
+    return '<tr class="'+(i===0?'top1':'')+(S&&S.rankPos===i+1&&S.did===tab&&S.modal==='rank'?' me':'')+'"><td class="pl">'+(i+1)+'</td><td><div class="who" style="--ca:'+c.acc+'"><canvas id="rk-'+i+'" width="80" height="80"></canvas><div><b>'+esc(e.n)+'</b><small>'+c.n+(e.v?' · zwycięstwo':'')+'</small></div></div></td><td class="n">'+e.w+'/'+MAXWAVE+'</td><td class="n" style="color:var(--accent)">'+e.s+'</td></tr>';
+  }).join('')+'</tbody></table>';
+}
+function paintRank(){
+  var tab=DIFF[rankTab]?rankTab:(DIFF[meta.diff]?meta.diff:'normal'),l=rankList(tab);
+  l.forEach(function(e,i){
+    var cvr=$('rk-'+i);if(!cvr||!cvr.getContext)return;
+    var g=cvr.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,80,80);g.scale(2,2);
+    drawCastle(g,castleById(e.c),20,25,.72,clock+1,{ang:-.5,rec:0,hit:0,low:false});
+  });
+}
 function renderOverlay(){
   var o=$('ov'),keep=o.scrollTop||0;
   if(!S.modal){o.hidden=true;o.innerHTML='';return}
@@ -1513,17 +1617,31 @@ function renderOverlay(){
     });
   }else if(S.modal==='end'){
     var win=S.result==='win',cg=S.cxGain,cx=cxOf(S.castle.id),cp=cx.lv>=CXMAX?100:Math.floor(cx.xp/cxNeed(cx.lv)*100);
-    o.innerHTML='<div class="pan"><h2>'+(win?'Bastion obroniony':'Bastion upadł')+'</h2><p>Fala '+S.wave+' z '+MAXWAVE+' · XP w runie: poziom '+S.hero.lvl+' · pokonani kosmici: '+S.kills+'. Zdobywasz <b style="color:var(--epic)">'+S.earned+' ◆</b> kryształów (masz '+meta.crystals+').</p>'+
+    o.innerHTML='<div class="pan"><h2>'+(win?'Bastion obroniony':'Bastion upadł')+'</h2><p>Fala '+S.wave+' z '+MAXWAVE+' · XP w runie: poziom '+S.hero.lvl+' · pokonani kosmici: '+S.kills+' · punkty: <b style="color:var(--accent)">'+S.score+'</b>'+(S.rankPos?' (miejsce <b>#'+S.rankPos+'</b> w rankingu: '+S.diff.n+')':'')+'. Zdobywasz <b style="color:var(--epic)">'+S.earned+' ◆</b> kryształów (masz '+meta.crystals+').</p>'+
       '<div class="mrow" style="flex-direction:column;align-items:stretch"><div><b>'+S.castle.n+': +'+cg.gain+' XP zamku</b><small>'+(cg.to>cg.from?'Awans zamku: poziom '+cg.from+' → '+cg.to+'. Każdy poziom daje +1 HP bazy, +2% obrażeń zamku i +4 złota na start.':'Poziom zamku: '+cx.lv+(cx.lv<CXMAX?' · '+cx.xp+'/'+cxNeed(cx.lv)+' XP do następnego':' (maks.)'))+'</small></div><div class="xpbar" style="height:6px"><i style="width:'+cp+'%"></i></div></div>'+
       '<h3>Poziom trudności</h3>'+diffHTML()+'<h3>Wybierz zamek na następny run</h3>'+castlesHTML()+
       '<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn" data-act="new">Nowy run</button><button type="button" class="btn ghost" data-act="go-title">Menu główne</button></div>'+
       '<h3>Stałe ulepszenia</h3>'+metaHTML()+'</div>';
   }else if(S.modal==='title'){
     o.innerHTML='<div class="pan ttl"><div class="logo">OSTATNI<br>BASTION</div><p class="tag">Tower defence z elementami roguelike. Kosmici lądują, a Twój zamek stoi na końcu drogi.</p>'+
-      '<div class="mm"><button type="button" class="btn big" data-act="go-setup">Graj</button>'+
+      '<label class="nickrow">Nick w rankingu <input id="nick" type="text" maxlength="'+NICKMAX+'" placeholder="Gracz" autocomplete="off" value="'+esc(meta.nick)+'"></label>'+
+      '<div class="mm">'+(S.live
+        ?'<button type="button" class="btn big" data-act="resume">Wznów grę <span>fala '+S.wave+'/'+MAXWAVE+'</span></button><button type="button" class="btn ghost big wide" data-act="go-setup">Nowa gra <span>porzuca obecną</span></button>'
+        :'<button type="button" class="btn big" data-act="go-setup">Graj</button>')+
+      '<button type="button" class="btn ghost big" data-act="go-rank">Ranking</button>'+
+      '<button type="button" class="btn ghost big mode" data-act="go-mode" data-id="tournament">Tournament <span>wkrótce</span></button>'+
+      '<button type="button" class="btn ghost big mode" data-act="go-mode" data-id="dominion">Dominion <span>wkrótce</span></button>'+
       '<button type="button" class="btn ghost big" data-act="go-shop">Ulepszenia stałe <span>'+meta.crystals+' ◆</span></button>'+
-      '<button type="button" class="btn ghost big" data-act="go-help">Jak grać</button></div>'+
+      '<button type="button" class="btn ghost big" data-act="go-help">Jak grać</button>'+
+      '<button type="button" class="btn ghost big mystery" data-act="go-secret">???</button></div>'+
       '<div class="cur">Zamek: '+castleById(meta.castle).n+' · Poziom trudności: '+(DIFF[meta.diff]||DIFF.normal).n+'</div></div>';
+  }else if(S.modal==='rank'){
+    o.innerHTML='<div class="pan"><button type="button" class="btn sm ghost back" data-act="go-title">← Menu</button><h2>Ranking najlepszych wyników</h2><p>Punkty dostajesz za każdego pokonanego kosmitę (Zielonek 10, Spodek 12, Rój 4, Pancernik 30, bossowie 500–1000). Każdy poziom trudności ma osobną tabelę z '+RANKMAX+' najlepszymi wynikami.</p>'+rankHTML()+'</div>';
+  }else if(S.modal==='mode'){
+    var md=MODES[S.modeId]||MODES.tournament;
+    o.innerHTML='<div class="pan"><button type="button" class="btn sm ghost back" data-act="go-title">← Menu</button><h2>'+md.n+'</h2><p>'+md.d+'</p></div>';
+  }else if(S.modal==='secret'){
+    o.innerHTML='<div class="pan" style="align-items:center"><div class="dlg" role="dialog" aria-modal="true"><b>BO KOCIEJ MORDY DOSTANIESZ!</b><button type="button" class="btn" data-act="go-title">OK</button></div></div>';
   }else if(S.modal==='shop'){
     o.innerHTML='<div class="pan"><button type="button" class="btn sm ghost back" data-act="go-title">← Menu</button><h2>Ulepszenia stałe</h2><p>Kryształy zdobywasz za każdy run. Masz <b style="color:var(--epic)">'+meta.crystals+' ◆</b>.</p>'+metaHTML()+'</div>';
   }else if(S.modal==='help'){
@@ -1540,9 +1658,19 @@ function renderOverlay(){
       '<div><button type="button" class="btn" data-act="new">Rozpocznij run</button></div></div>';
   }
   if(S.modal==='menu'||S.modal==='end')paintPreviews();
+  if(S.modal==='rank')paintRank();
   o.scrollTop=keep;
 }
-function startNew(){newRun();S.modal=null;cache={};tbCache={};renderOverlay();ui()}
+/* Wyjście do menu startowego wstrzymuje grę (update() nic nie robi, gdy jest modal). Run można wznowić przyciskiem „Wznów grę”. */
+function exitToMenu(){
+  if(!S||S.modal||S.result)return;
+  quitStop();S.build=null;S.live=true;S.modal='title';renderOverlay();
+}
+function resumeRun(){
+  if(!S||!S.live||S.modal!=='title')return;
+  S.modal=null;renderOverlay();ui();
+}
+function startNew(){newRun();S.live=true;S.modal=null;cache={};tbCache={};renderOverlay();ui()}
 
 /* ---------- Wejście ---------- */
 function cvPos(ev){var r=cv.getBoundingClientRect();return {x:(ev.clientX-r.left)*CW/r.width,y:(ev.clientY-r.top)*CH/r.height}}
@@ -1566,13 +1694,18 @@ document.addEventListener('click',function(ev){
   if(a==='build'){if(!S.modal)toggleBuild(el.getAttribute('data-k'))}
   else if(a==='sell')sellTower(S.sel);
   else if(a==='pick')pickCard(+el.getAttribute('data-i'));
-  else if(a==='lv-toggle')lvToggle();
+  else if(a==='lv-toggle')lvToggle(el.getAttribute('data-k')||undefined);
   else if(a==='lv-pick')lvPick(+el.getAttribute('data-i'));
   else if(a==='new')startNew();
   else if(a==='go-title'){S.modal='title';renderOverlay()}
   else if(a==='go-setup'){S.modal='menu';renderOverlay()}
   else if(a==='go-shop'){S.modal='shop';renderOverlay()}
   else if(a==='go-help'){S.modal='help';renderOverlay()}
+  else if(a==='resume')resumeRun();
+  else if(a==='go-rank'){rankTab=meta.diff;S.modal='rank';renderOverlay()}
+  else if(a==='rank-tab'){rankTab=el.getAttribute('data-id');renderOverlay()}
+  else if(a==='go-mode'){S.modeId=el.getAttribute('data-id');S.modal='mode';renderOverlay()}
+  else if(a==='go-secret'){S.modal='secret';renderOverlay()}
   else if(a==='diff'){
     meta.diff=el.getAttribute('data-id');saveMeta();
     if(S.modal==='menu'){newRun();S.modal='menu';cache={};tbCache={}}
@@ -1588,20 +1721,55 @@ document.addEventListener('click',function(ev){
     if(m&&l<m.max&&meta.crystals>=cost){meta.crystals-=cost;meta.lv[m.id]=l+1;saveMeta();renderOverlay()}
   }
 });
-$('go').addEventListener('click',startWave);
-var quitT=0;
-function quitReset(){var q=$('quit');clearTimeout(quitT);q.classList.remove('arm');q.textContent='Zakończ grę'}
-$('quit').addEventListener('click',function(){
-  if(!S||S.modal)return;
-  var q=$('quit');
-  if(!q.classList.contains('arm')){q.classList.add('arm');q.textContent='Na pewno? Kliknij ponownie';clearTimeout(quitT);quitT=setTimeout(quitReset,3000);return}
-  quitReset();endRun(false);
+document.addEventListener('input',function(ev){
+  var t=ev.target;if(!t||t.id!=='nick')return;
+  meta.nick=String(t.value||'').slice(0,NICKMAX);saveMeta();
 });
+/* Pełny ekran: przeglądarka pozwala wejść w niego tylko po geście użytkownika, więc włączamy go przy pierwszym kliknięciu lub klawiszu. Przycisk ⛶ przełącza go ręcznie. */
+function fsOn(){
+  var de=document.documentElement;if(!de)return;
+  try{var f=de.requestFullscreen||de.webkitRequestFullscreen;if(f){var p=f.call(de);if(p&&p.catch)p.catch(function(){})}}catch(e){}
+}
+function fsOff(){
+  try{var f=document.exitFullscreen||document.webkitExitFullscreen;if(f){var p=f.call(document);if(p&&p.catch)p.catch(function(){})}}catch(e){}
+}
+function fsActive(){return !!(document.fullscreenElement||document.webkitFullscreenElement)}
+var fsAuto=false;
+function fsFirst(ev){
+  if(fsAuto)return;
+  if(ev&&ev.target&&ev.target.closest&&ev.target.closest('#fs'))return;
+  if(ev&&ev.type==='keydown'&&(ev.key==='Escape'||ev.key==='F11'))return;
+  fsAuto=true;if(!fsActive())fsOn();
+}
+document.addEventListener('pointerdown',fsFirst);
+document.addEventListener('keydown',fsFirst);
+$('fs').addEventListener('click',function(){if(fsActive())fsOff();else fsOn();fsAuto=true});
+$('go').addEventListener('click',startWave);
+/* „Zakończ grę”: trzeba przytrzymać 3 s (mysz, dotyk albo Enter/Spacja); puszczenie przycisku wcześniej anuluje. Bez dodatkowego potwierdzenia. */
+var quitT=0,QUITMS=3000;
+function quitStop(){clearTimeout(quitT);quitT=0;$('quit').classList.remove('hold')}
+function quitStart(){
+  if(!S||S.modal||quitT)return;
+  $('quit').classList.add('hold');
+  quitT=setTimeout(function(){quitT=0;$('quit').classList.remove('hold');if(S&&!S.modal)endRun(false)},QUITMS);
+}
+(function(){
+  var q=$('quit');
+  q.addEventListener('pointerdown',function(ev){if(ev.button===0||ev.button===undefined)quitStart()});
+  ['pointerup','pointerleave','pointercancel','blur'].forEach(function(n){q.addEventListener(n,quitStop)});
+  q.addEventListener('contextmenu',function(ev){ev.preventDefault()});
+  q.addEventListener('keydown',function(ev){
+    if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();ev.stopPropagation();if(!ev.repeat)quitStart()}
+  });
+  q.addEventListener('keyup',function(ev){if(ev.key==='Enter'||ev.key===' '){ev.stopPropagation();quitStop()}});
+})();
+$('exit').addEventListener('click',function(ev){if(ev.currentTarget&&ev.currentTarget.blur)ev.currentTarget.blur();exitToMenu()});
 $('spd').addEventListener('click',function(){if(S)cycleSpeed()});
 document.addEventListener('keydown',function(ev){
   if(!S||ev.ctrlKey||ev.metaKey||ev.altKey)return;
   var k=ev.key.toLowerCase();
   if(S.modal==='cards'){if(k>='1'&&k<='3')pickCard(+k-1);return}
+  if(k==='escape'&&(S.modal==='rank'||S.modal==='mode'||S.modal==='secret')){S.modal='title';renderOverlay();return}
   if(S.modal)return;
   if(k==='enter'){ev.preventDefault();lvToggle();return}
   if(S.lvOpen){if(k>='1'&&k<='3'){lvPick(+k-1);return}if(k==='escape'){S.lvOpen=false;lvKey='';ui();return}}
