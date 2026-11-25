@@ -158,10 +158,12 @@ button{font:inherit;color:var(--text);cursor:pointer}
 .fsb:hover{border-color:var(--text)}
 .hud .rt{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px}
 /* Pełny ekran: plansza dopasowana do wysokości okna */
+@media (min-height:541px),(orientation:portrait){
 html:fullscreen #app{max-width:none;padding:8px 14px 10px;gap:8px}
 html:fullscreen .board{width:min(100%,calc((100vh - 250px)*1.6667));margin:0 auto}
 html:-webkit-full-screen #app{max-width:none;padding:8px 14px 10px;gap:8px}
 html:-webkit-full-screen .board{width:min(100%,calc((100vh - 250px)*1.6667));margin:0 auto}
+}
 /* Ranking */
 .tabs{display:flex;flex-wrap:wrap;gap:6px}
 .rk{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
@@ -200,6 +202,64 @@ html:-webkit-full-screen .board{width:min(100%,calc((100vh - 250px)*1.6667));mar
 .dlg.bug a.btn{text-decoration:none;display:inline-block}
 @media (max-width:640px){.cards{grid-template-columns:1fr}.card{min-height:0}.meta{grid-template-columns:1fr}.lvpan{grid-template-columns:1fr}.lvpan .card{min-height:0}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* Telefon: podpowiedź obrotu w pionie (tylko urządzenia dotykowe) */
+#rot{display:none;position:fixed;inset:0;z-index:100;background:rgba(8,11,14,.97);flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:28px;text-align:center}
+@media (orientation:portrait) and (max-width:700px) and (pointer:coarse){#rot:not(.off){display:flex}}
+#rot h2{font:700 22px/1.2 var(--display);margin:0}
+#rot p{margin:0;color:var(--muted);line-height:1.5;max-width:34ch}
+#rot .btn{width:100%;max-width:320px}
+.rotph{width:84px;height:140px;border:5px solid var(--accent);border-radius:16px;position:relative;margin:26px 0 22px;animation:rotp 2.6s ease-in-out infinite}
+.rotph::after{content:"";position:absolute;left:50%;bottom:8px;width:26px;height:4px;margin-left:-13px;background:var(--accent);border-radius:2px}
+@keyframes rotp{0%,25%{transform:rotate(0)}65%,100%{transform:rotate(-90deg)}}
+@media (prefers-reduced-motion:reduce){.rotph{animation:none;transform:rotate(-90deg)}}
+/* Telefon poziomo: plansza na cały ekran, HUD i przyciski pływają nad nią */
+@media (orientation:landscape) and (max-height:540px){
+html,body{overflow:hidden}
+#app{max-width:none;padding:0;gap:0;height:100vh;height:100dvh;display:grid;place-items:center}
+h1{display:none}
+.hud{position:fixed;top:4px;left:50%;transform:translateX(-50%);z-index:6;background:rgba(8,11,14,.72);border:1px solid var(--line);border-radius:10px;padding:3px 10px;gap:12px;flex-wrap:nowrap;width:max-content;max-width:calc(100vw - 16px)}
+.hud .rt{gap:10px;flex-wrap:nowrap}
+.stats{gap:12px;flex-wrap:nowrap}
+.st{min-width:0;flex-direction:row;align-items:baseline;gap:4px}
+.st small{font-size:9px;white-space:nowrap}
+.st b{font-size:13px}
+.st .xpbar{display:none}
+.fsb{padding:2px 7px;font-size:12px}
+#bug{font-size:0;padding:3px 8px}
+#bug::before{content:"\1F41E";font-size:13px}
+.board{width:min(100vw,calc(100vh*1.6667));width:min(100vw,calc(100dvh*1.6667));border-radius:0;border:0}
+.bar{display:contents}
+#towers{position:fixed;left:50%;bottom:4px;transform:translateX(-50%);z-index:6;display:flex;flex-wrap:nowrap;gap:3px;background:rgba(10,14,18,.8);border:1px solid var(--line);border-radius:12px;padding:3px}
+.tb{flex-direction:column;padding:3px 5px;background:transparent;border:1px solid transparent;align-items:center}
+.tb.on{border-color:var(--accent);background:var(--panel2)}
+.tb b,.tb .role{display:none}
+.tb canvas{width:30px;height:30px}
+.tb small{font-size:10px}
+#skills{position:fixed;left:6px;top:50%;transform:translateY(-50%);flex-direction:column;z-index:6;gap:4px}
+.sk{min-width:78px;padding:4px 6px}
+.sk small{display:none}
+.sk b{font-size:10px}
+.bar>.grp:last-child{position:fixed;right:6px;top:50%;transform:translateY(-50%);z-index:6;flex-direction:column;gap:4px}
+.btn{padding:7px 9px;font-size:12px}
+.btn.red small{font-size:9px}
+.info{position:fixed;left:50%;bottom:62px;transform:translateX(-50%);z-index:6;min-height:0;background:rgba(10,14,18,.92);border:1px solid var(--line);border-radius:10px;padding:4px 10px;display:none;width:max-content;max-width:calc(100vw - 260px)}
+#app.hassel .info{display:flex}
+.sel{gap:6px 10px;font-size:12px}
+.sel>span:nth-child(2){display:none}
+.slots{display:none}
+.lvwrap{top:42px}
+.lvwrap.open .lvbtn{top:42px}
+#app.inmodal #towers,#app.inmodal #skills,#app.inmodal .bar>.grp:last-child,#app.inmodal .info{visibility:hidden}
+.ov{padding:44px 8px 8px}
+.ov.title .logo{font-size:30px;margin-top:0}
+.ov.title .logo br{display:none}
+.ttl .tag{display:none}
+.ov.title .ttl{gap:8px}
+.ov.title .mm{grid-template-columns:repeat(3,1fr);width:min(640px,100%)}
+.ov.title .mm .btn{padding:8px 10px;font-size:13px}
+.ov.title .mm .btn:first-child{padding:10px 14px;font-size:15px}
+.nickrow input{padding:4px 8px}
+}
 </style>
 </head>
 <body>
@@ -233,6 +293,7 @@ html:-webkit-full-screen .board{width:min(100%,calc((100vh - 250px)*1.6667));mar
     <div id="items" class="slots"></div>
   </section>
 </div>
+<div id="rot" role="dialog" aria-modal="true" aria-labelledby="rott"><div class="rotph" aria-hidden="true"></div><h2 id="rott">Obróć telefon poziomo</h2><p>Plansza będzie około 2× większa, a przyciski wygodniejsze do dotykania.</p><p id="rotnote"></p><button type="button" class="btn" data-act="rot-go">Obróć i graj</button><button type="button" class="btn ghost" data-act="rot-off">Graj w pionie</button></div>
 
 <script>
 (function(){
@@ -1563,7 +1624,7 @@ function updateTowerBar(){
   TKEYS.forEach(function(k){
     var cost=towerCost(k),cls='tb'+(S.build===k?' on':'')+(S.gold<cost?' off':'');
     var key=cls+'|'+cost;
-    if(tbCache[k]!==key){tbCache[k]=key;$('tb-'+k).className=cls;$('tc-'+k).textContent=cost+' zł · '+ROLE[k]}
+    if(tbCache[k]!==key){tbCache[k]=key;$('tb-'+k).className=cls;$('tc-'+k).innerHTML=cost+' zł<span class="role"> · '+ROLE[k]+'</span>'}
   });
 }
 function ui(){
@@ -1592,6 +1653,8 @@ function ui(){
   $('quit').disabled=!!S.modal;$('exit').disabled=!!S.modal||!!S.result;
   if(S.modal&&quitT)quitStop();
   $('spd').textContent='x'+S.speed;
+  var hm0=!!S.modal;if(cache.inmodal!==hm0){cache.inmodal=hm0;$('app').classList.toggle('inmodal',hm0)}
+  var hs0=!!S.sel;if(cache.hassel!==hs0){cache.hassel=hs0;$('app').classList.toggle('hassel',hs0)}
   if(S.sel){
     var t=S.sel,st=tstat(t),bd=tinfo(t.type),L=S.tup[t.type];
     setHTML('sel','<span><b style="color:'+bd.col+'">'+bd.n+'</b> ('+ROLE[t.type]+'; '+twText(bd.tw)+') · ulepszenia '+L+'/5</span><span>Obr. '+st.dmg.toFixed(st.dmg<10?1:0)+' · Szybk. '+st.rate.toFixed(2)+'/s · Zasięg '+Math.round(st.range)+'</span>'+
@@ -1687,7 +1750,7 @@ function renderOverlay(){
       '<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn" data-act="new">Nowy run</button><button type="button" class="btn ghost" data-act="go-title">Menu główne</button></div>'+
       '<h3>Stałe ulepszenia</h3>'+metaHTML()+'</div>';
   }else if(S.modal==='title'){
-    o.innerHTML='<div class="pan ttl"><div class="logo">OSTATNI<br>BASTION</div><p class="tag">Tower defence z elementami roguelike. Kosmici lądują, a Twój zamek stoi na końcu drogi.</p>'+
+    o.innerHTML='<div class="pan ttl"><div class="logo">OSTATNI <br>BASTION</div><p class="tag">Tower defence z elementami roguelike. Kosmici lądują, a Twój zamek stoi na końcu drogi.</p>'+
       '<label class="nickrow">Nick w rankingu <input id="nick" type="text" maxlength="'+NICKMAX+'" placeholder="Gracz" autocomplete="off" value="'+esc(meta.nick)+'"></label>'+
       '<div class="mm">'+(S.live
         ?'<button type="button" class="btn big" data-act="resume">Wznów grę <span>fala '+S.wave+'/'+MAXWAVE+'</span></button><button type="button" class="btn ghost big wide" data-act="go-setup">Nowa gra <span>porzuca obecną</span></button>'
@@ -1769,6 +1832,8 @@ document.addEventListener('click',function(ev){
   else if(a==='go-help'){S.modal='help';renderOverlay()}
   else if(a==='resume')resumeRun();
   else if(a==='export-runs')exportRuns();
+  else if(a==='rot-go')rotGo();
+  else if(a==='rot-off')$('rot').classList.add('off');
   else if(a==='clear-runs'){if(typeof confirm!=='function'||confirm('Usunąć zapis wszystkich zapisanych gier?')){try{localStorage.removeItem(RUNKEY)}catch(e){}renderOverlay()}}
   else if(a==='bug'){if(S.modal!=='bug'){quitStop();S.bugPrev=S.modal;S.modal='bug';renderOverlay()}}
   else if(a==='bug-close')bugClose();
@@ -1800,8 +1865,15 @@ document.addEventListener('input',function(ev){
 });
 /* Pełny ekran: przeglądarka pozwala wejść w niego tylko po geście użytkownika, więc włączamy go przy pierwszym kliknięciu lub klawiszu. Przycisk ⛶ przełącza go ręcznie. */
 function fsOn(){
-  var de=document.documentElement;if(!de)return;
-  try{var f=de.requestFullscreen||de.webkitRequestFullscreen;if(f){var p=f.call(de);if(p&&p.catch)p.catch(function(){})}}catch(e){}
+  var de=document.documentElement,p;if(!de)return p;
+  try{var f=de.requestFullscreen||de.webkitRequestFullscreen;if(f){p=f.call(de);if(p&&p.catch)p.catch(function(){})}}catch(e){}
+  return p;
+}
+/* „Obróć i graj”: pełny ekran + blokada orientacji poziomej (działa tam, gdzie przeglądarka na to pozwala; w innych przypadkach prosimy o ręczny obrót). */
+function rotGo(){
+  var note=$('rotnote');
+  function fail(){if(note)note.textContent='Ta przeglądarka nie pozwala wymusić obrotu. Obróć telefon ręcznie.'}
+  try{Promise.resolve(fsOn()).then(function(){var o=screen.orientation;if(o&&o.lock)return o.lock('landscape');throw 0}).catch(fail)}catch(e){fail()}
 }
 function fsOff(){
   try{var f=document.exitFullscreen||document.webkitExitFullscreen;if(f){var p=f.call(document);if(p&&p.catch)p.catch(function(){})}}catch(e){}

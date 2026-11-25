@@ -18,6 +18,7 @@ Tower defence z elementami roguelike. Stały zamek na końcu ścieżki (pasywne 
 - Ikony nagród: awans zamku (★, prawy górny róg, złota) i nagroda za falę (⚔, lewy górny róg, niebieska) to dwie osobne ikony (`LVG`, `lvToggle(kind)`), baner fali jest na środku.
 - Przycisk „Zgłoś błąd” (nagłówek) pauzuje grę i otwiera nowe zgłoszenie w GitHub Issues (`bugUrl`, `BUGREPO`) z opisem gracza i danymi gry bez nicku.
 - Przycisk „Zakończ grę” działa po przytrzymaniu 3 s (bez potwierdzenia). Żółty przycisk wyjścia pod prędkością (`exitToMenu`) pauzuje grę i otwiera menu startowe; run można wznowić („Wznów grę”, `S.live`).
+- Telefon: w poziomie (`@media (orientation:landscape) and (max-height:540px)`) plansza zajmuje cały ekran, a statystyki, pasek wież, umiejętności i przyciski pływają nad nią (klasy `hassel`/`inmodal` na `#app` ukrywają i pokazują panele). W pionie na urządzeniach dotykowych `#rot` pokazuje podpowiedź „Obróć telefon poziomo” (`rotGo` próbuje pełnego ekranu i blokady orientacji, „Graj w pionie” zamyka). Nie testowane na prawdziwym telefonie, tylko w Edge headless.
 - Menu startowe ma też Ranking, Tournament i Dominion (na razie puste, `MODES`) oraz „???”. Pełny ekran włącza się przy pierwszym kliknięciu lub klawiszu (przeglądarki wymagają gestu) i przyciskiem ⛶.
 
 ## Treści wrażliwe
