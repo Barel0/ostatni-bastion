@@ -212,6 +212,8 @@ html:-webkit-full-screen .board{width:min(100%,calc((100vh - 250px)*1.6667));mar
 #rot h2{font:700 22px/1.2 var(--display);margin:0}
 #rot p{margin:0;color:var(--muted);line-height:1.5;max-width:34ch}
 #rot .btn{width:100%;max-width:320px}
+#rot.ios [data-act="rot-go"]{display:none}
+#rot #rotnote{color:var(--accent)}
 .rotph{width:84px;height:140px;border:5px solid var(--accent);border-radius:16px;position:relative;margin:26px 0 22px;animation:rotp 2.6s ease-in-out infinite}
 .rotph::after{content:"";position:absolute;left:50%;bottom:8px;width:26px;height:4px;margin-left:-13px;background:var(--accent);border-radius:2px}
 @keyframes rotp{0%,25%{transform:rotate(0)}65%,100%{transform:rotate(-90deg)}}
@@ -2227,9 +2229,13 @@ function fsOn(){
   return p;
 }
 /* „Obróć i graj”: pełny ekran + blokada orientacji poziomej (działa tam, gdzie przeglądarka na to pozwala; w innych przypadkach prosimy o ręczny obrót). */
+/* iPhone/iPad: Safari nie obsługuje pełnego ekranu na iPhonie ani blokady orientacji, więc zamiast przycisku pokazujemy instrukcję (najczęściej winna jest systemowa blokada orientacji). */
+var IOS=typeof navigator!=='undefined'&&(/iPhone|iPad|iPod/.test(navigator.userAgent||'')||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1));
+var IOSNOTE='Na iPhonie wyłącz blokadę orientacji: otwórz Centrum sterowania (przesuń z prawego górnego rogu w dół, a na starszych modelach z dołu w górę) i dotknij ikony kłódki ze strzałką. Potem obróć telefon poziomo.';
+if(IOS){var rotEl=$('rot'),rotNote=$('rotnote');if(rotEl&&rotEl.classList)rotEl.classList.add('ios');if(rotNote)rotNote.textContent=IOSNOTE}
 function rotGo(){
   var note=$('rotnote');
-  function fail(){if(note)note.textContent='Ta przeglądarka nie pozwala wymusić obrotu. Obróć telefon ręcznie.'}
+  function fail(){if(note)note.textContent=IOS?IOSNOTE:'Ta przeglądarka nie pozwala wymusić obrotu. Obróć telefon ręcznie.'}
   try{Promise.resolve(fsOn()).then(function(){var o=screen.orientation;if(o&&o.lock)return o.lock('landscape');throw 0}).catch(fail)}catch(e){fail()}
 }
 function fsOff(){
