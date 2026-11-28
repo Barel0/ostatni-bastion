@@ -70,18 +70,18 @@ var DATA = (function () {
 
   /* Klasy wrogów (wspólne dla frakcji). res: procent otrzymywanych obrażeń. */
   var UNITS = [
-    { cls: 'grunt', hp: 100, spd: 0.85, gold: 7, xp: 5, dmg: 1, r: 0.28 },
-    { cls: 'runner', hp: 62, spd: 1.45, gold: 6, xp: 5, dmg: 1, r: 0.26, res: { frost: 1.3 }, splashRes: 0.7 },
-    { cls: 'brute', hp: 330, spd: 0.6, gold: 18, xp: 12, dmg: 2, r: 0.34, res: { phys: 0.6, poison: 1.3 } },
-    { cls: 'swarm', hp: 34, spd: 1.15, gold: 3, xp: 2, dmg: 1, r: 0.2, res: { fire: 1.3, poison: 0.7 } },
-    { cls: 'shield', hp: 190, spd: 0.72, gold: 12, xp: 8, dmg: 1, r: 0.3, res: { fire: 0.7, bolt: 1.3 }, shield: 0.35 }
+    { cls: 'grunt', pts: 10, hp: 100, spd: 0.85, gold: 7, xp: 5, dmg: 1, r: 0.28 },
+    { cls: 'runner', pts: 12, hp: 62, spd: 1.45, gold: 6, xp: 5, dmg: 1, r: 0.26, res: { frost: 1.3 }, splashRes: 0.7 },
+    { cls: 'brute', pts: 30, hp: 330, spd: 0.6, gold: 18, xp: 12, dmg: 2, r: 0.34, res: { phys: 0.6, poison: 1.3 } },
+    { cls: 'swarm', pts: 4, hp: 34, spd: 1.15, gold: 3, xp: 2, dmg: 1, r: 0.2, res: { fire: 1.3, poison: 0.7 } },
+    { cls: 'shield', pts: 18, hp: 190, spd: 0.72, gold: 12, xp: 8, dmg: 1, r: 0.3, res: { fire: 0.7, bolt: 1.3 }, shield: 0.35 }
   ];
   /* Bossowie w kolejności fal 5, 10, 15, 20. si = numer obrazka. */
   var BOSSES = [
-    { si: 5, mech: 'slow', hp: 1500, spd: 0.46, gold: 70, xp: 60, dmg: 6, r: 0.5, res: { poison: 1.3 }, d: 'Spowalnia wieże w pobliżu. Słaby na truciznę.' },
-    { si: 6, mech: 'dodge', hp: 2500, spd: 0.8, gold: 70, xp: 70, dmg: 6, r: 0.42, d: 'Unika strzał (45%). Spowolniony unika rzadziej, piorunów nie unika.' },
-    { si: 7, mech: 'summon', hp: 6500, spd: 0.46, gold: 80, xp: 90, dmg: 8, r: 0.5, d: 'Co 4 s przywołuje rój.' },
-    { si: 8, mech: 'revive', hp: 11000, spd: 0.42, gold: 100, xp: 120, dmg: 12, r: 0.55, d: 'Raz wstaje z połową HP. Jeśli płonie, tylko z 25%.' }
+    { si: 5, pts: 500, mech: 'slow', hp: 1500, spd: 0.46, gold: 70, xp: 60, dmg: 6, r: 0.5, res: { poison: 1.3 }, d: 'Spowalnia wieże w pobliżu. Słaby na truciznę.' },
+    { si: 6, pts: 500, mech: 'dodge', hp: 2500, spd: 0.8, gold: 70, xp: 70, dmg: 6, r: 0.42, d: 'Unika strzał (45%). Spowolniony unika rzadziej, piorunów nie unika.' },
+    { si: 7, pts: 500, mech: 'summon', hp: 6500, spd: 0.46, gold: 80, xp: 90, dmg: 8, r: 0.5, d: 'Co 4 s przywołuje rój.' },
+    { si: 8, pts: 1000, mech: 'revive', hp: 11000, spd: 0.42, gold: 100, xp: 120, dmg: 12, r: 0.55, d: 'Raz wstaje z połową HP. Jeśli płonie, tylko z 25%.' }
   ];
   var ENEMY_FACTIONS = [
     { id: 'aliens', n: 'Kosmici', mech: '', hp: 1.0, d: 'Bez dodatkowej mechaniki.',
@@ -124,12 +124,15 @@ var DATA = (function () {
     bossHp: 1.15, bossResist: 0.65, bossHeal: 2,
     kinds: ['phys', 'fire', 'frost', 'bolt', 'poison'], kindName: { phys: 'Stal', fire: 'Ogień', frost: 'Mróz', bolt: 'Piorun', poison: 'Trucizna' }
   };
+  /* Punkty poza zabójstwami, po każdej odpartej fali: hp za każde HP zamku, time za każdą sekundę przed limitem fali.
+     Limit = czas wypuszczania wrogów + przejście całej drogi w tempie pace (kratki na sekundę), więc zależy od fali i mapy. */
+  var SCORE = { hp: 10, time: 5, pace: 0.6 };
   var WAVES = 20;
   /* odblokowania: numer fali, przed którą budujesz */
   function typesAt(w) { return w >= 15 ? 5 : w >= 6 ? 4 : w >= 3 ? 3 : 2; }
   function slotsAt(w) { return w >= 15 ? 7 : w >= 10 ? 6 : w >= 6 ? 5 : w >= 3 ? 4 : 3; } /* zwykłe wieże; od fali 15 dochodzi osobne miejsce legendy */
 
   return { TOWERS: TOWERS, FACTIONS: FACTIONS, LEGEND_COST: LEGEND_COST, PATHS: PATHS, PATH_IDS: PATH_IDS, LEVEL_DMG: LEVEL_DMG, UNITS: UNITS, BOSSES: BOSSES,
-    ENEMY_FACTIONS: ENEMY_FACTIONS, HARDCORE: HARDCORE, THEMES: THEMES, FIELDS: FIELDS, DIFF: DIFF, WAVES: WAVES, typesAt: typesAt, slotsAt: slotsAt };
+    ENEMY_FACTIONS: ENEMY_FACTIONS, HARDCORE: HARDCORE, SCORE: SCORE, THEMES: THEMES, FIELDS: FIELDS, DIFF: DIFF, WAVES: WAVES, typesAt: typesAt, slotsAt: slotsAt };
 })();
 if (typeof module !== 'undefined') module.exports = DATA;

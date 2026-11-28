@@ -16,6 +16,7 @@ Otwórz `index.html` (albo `demo/index.html`) w przeglądarce.
 `demo/` to osobna wersja gry na telefon w poziomie: 4 frakcje, 20 fal, wieże ulepszane osobno, bramy nad drogą, tryb Hardcore, losowe mapy i drogi.
 
 - Instalacja na telefonie: [android/INSTALACJA.md](android/INSTALACJA.md)
+- Publiczny ranking (`demo/online.js`): wyniki trafiają do Arkusza Google autora tylko za zgodą gracza; gra działa też bez internetu. Serwer: [tools/RANKING-INSTRUKCJA.md](tools/RANKING-INSTRUKCJA.md).
 - Budowanie pliku APK: `python android/build.py --version X.Y --code N` (wymaga JDK i Android SDK; opis na początku `android/build.py`). Klucz podpisu nie jest częścią repozytorium.
 - Balans dema: `node tests/demo-sim.js 800`
 - Grafiki: KayKit (Kay Lousberg, www.kaylousberg.com), licencja CC0.

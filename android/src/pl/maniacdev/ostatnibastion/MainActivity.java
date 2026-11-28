@@ -159,6 +159,17 @@ public class MainActivity extends Activity {
             else v.vibrate(t, -1);
         }
 
+        /* czerwony przycisk wyjścia w grze: zamyka aplikację i usuwa ją z listy ostatnich */
+        @JavascriptInterface
+        public void exit() {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    finishAndRemoveTask();
+                }
+            });
+        }
+
         @JavascriptInterface
         public void keepAwake(final boolean on) {
             runOnUiThread(new Runnable() {

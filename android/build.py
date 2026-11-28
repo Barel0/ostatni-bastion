@@ -9,7 +9,7 @@ from PIL import Image, ImageFilter
 HERE = os.path.dirname(os.path.abspath(__file__))
 DEMO = os.path.join(HERE, '..', 'demo')
 BUILD = os.path.join(HERE, 'build')
-WEB = ['index.html', 'assets.js', 'data.js', 'roads.js', 'game.js', 'sfx.js', 'ui.js']
+WEB = ['index.html', 'assets.js', 'data.js', 'roads.js', 'game.js', 'sfx.js', 'online.js', 'ui.js']
 MIN_SDK, TARGET_SDK = 24, 35
 
 ap = argparse.ArgumentParser()

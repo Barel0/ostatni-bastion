@@ -71,7 +71,7 @@ var GAME = (function (DATA, Roads) {
     var nodes = opt.nodes || Roads.random(rnd).nodes;
     S = { seed: seed, f: f, did: opt.diff || 'normal', diff: diff, theme: theme, ef: enemy, road: buildRoad(nodes),
       wave: 0, phase: 'build', gold: diff.gold, points: 0, towers: [], enemies: [], shots: [], patches: [], kegs: [], saws: [], fx: [],
-      spawnQ: [], spawnT: 0, time: 0, kills: 0, tid: 1, result: null, banner: null, rerollFree: 1, rerollCost: 60,
+      spawnQ: [], spawnT: 0, time: 0, kills: 0, score: 0, scoreHp: 0, scoreTime: 0, fight: 0, real: 0, waveT: 0, par: 0, wn: 0, wt: 0, tid: 1, result: null, banner: null, rerollFree: 1, rerollCost: 60,
       mods: { tdmg: f.mods.tdmg || 1, cost: f.mods.cost || 1, gold: f.mods.gold || 1, hdmg: f.mods.hdmg || 1, crit: f.mods.crit || 0, xp: f.mods.xp || 1 },
       hpMax: 20 + (f.hp || 0), hp: 20 + (f.hp || 0), castle: null, buffT: 0, buff: 0, hc: !!diff.hc, ev: [] };
     if (S.hc) S.hp = 1;
@@ -336,6 +336,7 @@ var GAME = (function (DATA, Roads) {
     e.dead = true;
     cue(e.boss ? 'bossdie' : 'die');
     S.kills++;
+    S.score += e.pts;                   // punkty rankingowe
     if (S.hc && e.boss && S.hp < S.hpMax) {
       var heal = Math.min(DATA.HARDCORE.bossHeal, S.hpMax - S.hp);
       S.hp += heal;
@@ -621,7 +622,7 @@ var GAME = (function (DATA, Roads) {
     var hp = u.hp * hpScale(w) * S.diff.hp * F.hp * (b.hp || 1);
     var p = pathPos(d0 || 0);
     var e = { eid: eidc++, si: ui, cls: u.cls, boss: null, name: F.names[ui], d: d0 || 0, x: p.x, y: p.y, dir: 'r', flip: false, hp: hp, max: hp, spd: u.spd * (b.spd || 1), r: u.r,
-      gold: u.gold * Math.max(0.3, 1.1 - w * 0.075), xp: u.xp, dmg: u.dmg, res: b.res ? extend(u.res || {}, b.res) : u.res || null, splashRes: u.splashRes || 0,
+      gold: u.gold * Math.max(0.3, 1.1 - w * 0.075), pts: child ? 0 : u.pts, xp: u.xp, dmg: u.dmg, res: b.res ? extend(u.res || {}, b.res) : u.res || null, splashRes: u.splashRes || 0,
       sh: hp * ((b.shield || u.shield || 0) + (F.mech === 'shield' ? 0.2 : 0)), shMax: 0,
       heal: F.mech === 'heal' && u.cls === 'brute', rage: F.mech === 'rage', split: F.mech === 'split' && u.cls === 'brute' && !child };
     return finishEnemy(e);
@@ -639,7 +640,7 @@ var GAME = (function (DATA, Roads) {
     var p = pathPos(0);
     cue('boss');
     var e = { eid: eidc++, si: b.si, cls: 'boss', boss: b.mech, name: F.names[b.si], d: 0, x: p.x, y: p.y, dir: 'r', flip: false, hp: hp, max: hp, spd: b.spd, r: b.r,
-      gold: b.gold, xp: b.xp, dmg: b.dmg, res: res, splashRes: 0, sh: F.mech === 'shield' ? hp * 0.15 : 0, shMax: 0, heal: false, rage: F.mech === 'rage', split: false, sumT: 3 };
+      gold: b.gold, pts: b.pts, xp: b.xp, dmg: b.dmg, res: res, splashRes: 0, sh: F.mech === 'shield' ? hp * 0.15 : 0, shMax: 0, heal: false, rage: F.mech === 'rage', split: false, sumT: 3 };
     return finishEnemy(e);
   }
   function finishEnemy(e) {
@@ -676,19 +677,29 @@ var GAME = (function (DATA, Roads) {
     S.phase = 'wave';
     S.spawnQ = genWave(S.wave);
     S.spawnT = 0.8;
+    S.waveT = 0;
+    S.par = S.spawnQ.reduce(function (sum, q) { return sum + q.gap; }, S.spawnT) + S.road.len / DATA.SCORE.pace;
     S.banner = null;                      // numer fali pokazuje napis na środku ekranu (ui.js)
     return true;
+  }
+  /* punkty za HP zamku i za czas fali; w Hardcore czasem fali jest prawdziwy zegar (S.wt, z pauzami), liczony w ui.js */
+  function waveScore() {
+    var took = S.hc && S.wn === S.wave && S.wt > 0 ? S.wt : S.waveT;
+    var forHp = Math.max(0, S.hp) * DATA.SCORE.hp, forTime = Math.max(0, Math.round(S.par - took)) * DATA.SCORE.time;
+    S.scoreHp += forHp; S.scoreTime += forTime; S.score += forHp + forTime;
+    return forHp + forTime;
   }
   function endWave() {
     S.phase = 'build';
     S.shots = []; S.saws = []; S.patches = [];
+    var scored = waveScore();
     if (S.wave >= DATA.WAVES) { S.result = 'win'; return; }
     var pts = 1 + (S.wave % 5 === 0 ? 2 : 0);
     S.points += pts;
     var mine = S.towers.filter(function (t) { return t.type !== 'legend' && S.fields[t.c + ',' + t.r] === 'gold'; }).length * 8;
     var bonus = Math.round((24 + S.wave) * S.mods.gold) + mine;
     S.gold += bonus;
-    var msg = 'Fala odparta. +' + pts + (pts > 1 ? ' punkty' : ' punkt') + ' ulepszeń, +' + bonus + ' zł';
+    var msg = 'Fala odparta. +' + pts + (pts > 1 ? ' punkty' : ' punkt') + ' ulepszeń, +' + bonus + ' zł · wynik +' + scored;
     var w = nextWave();
     if (DATA.typesAt(w) > DATA.typesAt(w - 1)) {
       var nt = DATA.typesAt(w) === 5 ? S.f.leg.n : DATA.TOWERS[S.f.tw[DATA.typesAt(w) - 1]].n;
@@ -774,6 +785,8 @@ var GAME = (function (DATA, Roads) {
     }
     for (i = 0; i < S.towers.length; i++) { t = S.towers[i]; if (t.anim > 0) t.anim -= dt; }
     if (S.phase !== 'wave') return;
+    S.fight += dt;                      // czas samej walki (do rankingu)
+    S.waveT += dt;
     if (S.buffT > 0) S.buffT -= dt;
     if (S.zone) { S.zone.t -= dt; if (S.zone.t <= 0) S.zone = null; }
     var c = S.castle;
@@ -918,7 +931,7 @@ var GAME = (function (DATA, Roads) {
     if (!S || S.result || S.phase !== 'build') return null;
     var c = S.castle;
     return JSON.stringify({ v: 2, seed: S.seed, faction: S.f.id, diff: S.did, theme: S.theme.id, enemy: S.ef.id, nodes: S.road.nodes, fields: S.fields,
-      wave: S.wave, gold: S.gold, points: S.points, hp: S.hp, hpMax: S.hpMax, kills: S.kills, time: S.time, tid: S.tid, rerollFree: S.rerollFree, rerollCost: S.rerollCost,
+      wave: S.wave, gold: S.gold, points: S.points, hp: S.hp, hpMax: S.hpMax, kills: S.kills, score: S.score, scoreHp: S.scoreHp, scoreTime: S.scoreTime, fight: S.fight, real: S.real, time: S.time, tid: S.tid, rerollFree: S.rerollFree, rerollCost: S.rerollCost,
       kegs: S.kegs, castle: { lvl: c.lvl, xp: c.xp, need: c.need, pending: c.pending, offer: c.offer, sk: c.sk, dmgBonus: c.dmgBonus, gotPoint: c.gotPoint },
       towers: S.towers.map(function (t) { var o = {}; KEEP.forEach(function (k) { o[k] = t[k]; }); return o; }) });
   }
@@ -927,6 +940,7 @@ var GAME = (function (DATA, Roads) {
     if (!d || d.v !== 2) return null;
     newGame({ faction: d.faction, diff: d.diff, theme: d.theme, enemy: d.enemy, nodes: d.nodes, seed: d.seed });
     ['wave', 'gold', 'points', 'hp', 'hpMax', 'kills', 'time', 'tid', 'rerollFree', 'rerollCost', 'fields', 'kegs'].forEach(function (k) { S[k] = d[k]; });
+    S.score = d.score || 0; S.scoreHp = d.scoreHp || 0; S.scoreTime = d.scoreTime || 0; S.fight = d.fight || 0; S.real = d.real || 0;
     for (var k in d.castle) S.castle[k] = d.castle[k];
     S.towers = d.towers.map(function (o) { o.cd = 0.3; o.freezeCd = 0; o.stormCd = 8; o.grateCd = 2; o.grateT = 0; o.anim = 0; return o; });
     return S;

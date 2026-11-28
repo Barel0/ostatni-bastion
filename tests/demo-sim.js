@@ -129,7 +129,7 @@ function run(fid, diff, k) {
     const saved = GAME.save();
     if (saved && S().wave === 7) { GAME.load(saved); if (GAME.save() !== saved) throw new Error('zapis i odczyt dają różne stany'); }
   }
-  return { gate: S().towers.some(t => t.type === 'legend'), res: S().result, wave: S().wave, towers: S().towers.length, enemy: S().ef.id, fid, ...stat };
+  return { score: S().score, scoreHp: S().scoreHp, scoreTime: S().scoreTime, gate: S().towers.some(t => t.type === 'legend'), res: S().result, wave: S().wave, towers: S().towers.length, enemy: S().ef.id, fid, ...stat };
 }
 const avg = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
 for (const d of diffs) {
@@ -139,6 +139,7 @@ for (const d of diffs) {
   const grp = key => [...new Set(all.map(r => r[key]))].sort().map(v => { const g = all.filter(r => r[key] === v); return v + ' ' + Math.round(100 * g.filter(r => r.res === 'win').length / g.length) + '%'; }).join(' | ');
   console.log(d.padEnd(8), 'wygrane', wins.length + '/' + N, '(' + Math.round(100 * wins.length / N) + '%)', 'śr. fala', avg(all.map(r => r.wave)).toFixed(1));
   console.log('   frakcje:', grp('fid'));
+  if (wins.length) console.log('   punkty w wygranych (średnio): za pokonanych', Math.round(avg(wins.map(r => r.score - r.scoreHp - r.scoreTime))), '| za HP', Math.round(avg(wins.map(r => r.scoreHp))), '| za czas', Math.round(avg(wins.map(r => r.scoreTime))), '| razem', Math.round(avg(wins.map(r => r.score))));
   console.log('   wrogowie:', grp('enemy'));
   console.log('   bramy postawione:', all.filter(r => r.gate).length, '| bez wolnego miejsca (przestawianie):', all.filter(r => r.blocked).length, '| porażki w falach 1-3:', all.filter(r => r.res === 'lose' && r.wave <= 3).length);
   console.log('   strata HP na falę:', Array.from({ length: 20 }, (_, w) => avg(all.map(r => r.lost[w]).filter(x => x !== undefined)).toFixed(1)).join(' '));

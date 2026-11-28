@@ -85,6 +85,15 @@ button:disabled{opacity:.45;cursor:default}
 .orb b{font-size:22px;color:var(--ac)}.orb span{font-size:10px}
 #orb-speed{right:127px;bottom:18px;transform:translate(90px,0) scale(.3)}
 #orb-menu{right:95px;bottom:110px;transform:translate(60px,80px) scale(.3)}
+/* wyjście z gry (tylko w aplikacji): X1 - czerwone kółko, trzy kółka w równym łuku; w Hardcore X10 „Żar” */
+#orb-exit{display:none;right:25px;bottom:130px;transform:translate(0,96px) scale(.3);transition-delay:0s;color:#fff;background:radial-gradient(circle at 40% 30%,#ef4b4b,#a3151c);border-color:#ff9a92}
+#orb-exit svg{width:28px;height:28px}#orb-exit span{font-size:11px;font-weight:800}
+.app #orb-exit{display:flex}
+.app #orb-speed{right:137px;bottom:18px}
+.app #orb-menu{right:104px;bottom:97px}
+#stage.paused #twbtn{visibility:hidden}
+.ember3{display:none;position:absolute;width:6px;height:6px;border-radius:50%;background:#ff8a1e;box-shadow:0 0 8px #ff5a00;pointer-events:none;animation:sp3 1.2s linear infinite}
+@keyframes sp3{0%{opacity:1;transform:translate(0,0)}100%{opacity:0;transform:translate(var(--dx),-46px)}}
 #w2.open .orb{opacity:1;visibility:visible;transform:none;transition:transform .22s cubic-bezier(.2,1.4,.5,1),opacity .16s,visibility 0s}
 #sparks{right:15px;bottom:8px;width:96px;height:96px;pointer-events:none;visibility:hidden;z-index:4}
 #sparks i{position:absolute;border-radius:50%;background:#ff8a1e;box-shadow:0 0 8px #ff7a18;animation:sp 1.2s linear infinite}
@@ -94,6 +103,9 @@ button:disabled{opacity:.45;cursor:default}
 .hc #ring .trk{stroke:#2a1005cc;stroke-width:13}.hc #ring .arc{stroke:#ff8a1e;filter:drop-shadow(0 0 7px #ff5a00)}
 .hc #w2.hold #sparks{visibility:visible}
 .hc .orb{border-radius:12px;width:80px;height:80px;background:linear-gradient(#3a1a0c,#170a05);border-color:#ff8a1e;box-shadow:0 0 16px #ff6a00aa;color:#ffe7c2}
+.hc #orb-exit{border-radius:14px;background:linear-gradient(#5a0f0a,#240504);border-color:#ff5a2a;box-shadow:0 0 18px #ff3a00cc,0 4px 12px #000a;color:#ffe1cf}
+.hc #w2.open #orb-exit .ember3{display:block}
+.app .hc .orb{width:76px;height:76px}             /* trzy kafelki w łuku nie mogą się stykać */
 
 /* stawianie wieży */
 #place{left:0;top:0;right:0;bottom:0;pointer-events:none;opacity:0;transition:opacity .2s;z-index:5}
@@ -135,8 +147,6 @@ button:disabled{opacity:.45;cursor:default}
 .cbtns button{pointer-events:auto;padding:7px 14px;font-size:12px;min-height:34px}
 
 /* komunikaty i efekty */
-.tgl{top:12px;width:44px;height:36px;font-size:17px;background:#17202cee}
-.tgl.off{opacity:.45;text-decoration:line-through;filter:grayscale(1)}
 .app #rot{display:none!important}
 #hint{left:50%;top:66px;transform:translateX(-50%);background:#000d;border:1px solid var(--ln);border-radius:18px;padding:5px 14px;font-size:12.5px;pointer-events:none;opacity:0;transition:opacity .2s;text-align:center;width:max-content;max-width:560px;z-index:6}
 #hint.on{opacity:1}
@@ -174,6 +184,7 @@ button:disabled{opacity:.45;cursor:default}
 .btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 .btns button{padding:9px 18px;min-width:120px}
 .btns .main{background:#2d6b3a;border-color:#4a9a5a;font-weight:800}
+.btns .danger{background:linear-gradient(#d12f36,#80121a);border-color:#ff9a92;font-weight:800}
 .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:100%}
 .reward{min-height:150px;border:3px solid var(--ac);border-radius:14px;background:#1b2431;display:flex;flex-direction:column;gap:8px;align-items:center;justify-content:center;padding:10px}
 .reward b{font-size:16px}.reward span{font-size:12.5px;color:#d6e0ea}
@@ -193,6 +204,10 @@ button:disabled{opacity:.45;cursor:default}
 .sel915{position:absolute;left:50%;top:50%;width:915px;height:412px;margin:-206px 0 0 -457.5px}
 .sel915>*{position:absolute}
 .sel915 h1{left:0;right:0;top:12px;text-shadow:0 2px 8px #000}
+.selnick{right:14px;top:9px;height:36px;display:flex;align-items:center;gap:8px;font-size:14px;font-weight:800;text-shadow:0 2px 6px #000;z-index:3}
+.selnick input{flex:none;width:216px;height:34px;padding:0 8px;border-radius:9px;border:1px solid var(--ln);background:#0b121cf2;color:#fff;font:800 15px system-ui;text-align:center;user-select:text;-webkit-user-select:text}
+.selnick input:focus{outline:2px solid var(--ac)}
+.ishc .selnick input{border-color:#ff8a1e;box-shadow:0 0 12px #ff6a00aa;color:#ffe7c2}
 .fc{top:56px;width:208px;height:284px;background:#19222ef2;border:1px solid var(--ln);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px;transition:filter .4s,transform .4s cubic-bezier(.3,1.4,.5,1),box-shadow .4s}
 .fc canvas{width:150px;height:160px}
 .fc b{font-size:16px}.fc span{font-size:11.5px;color:#cdd9e4;line-height:1.25}
@@ -206,6 +221,122 @@ button:disabled{opacity:.45;cursor:default}
 .df.on{border:3px solid var(--ac);background:#26303f}
 .ishc .df.on{border-color:#ff8a1e;background:#3a1a0c}
 .play{top:354px;height:40px;background:linear-gradient(#3d9250,#236132);border:2px solid #6fd183;font-size:17px;font-weight:800}
+
+/* menu główne (G17): S5 „Świecące krawędzie”; z zapisaną grą Hardcore (klasa hot) S10 „Żar na napisach” */
+#menubg.soft{object-fit:cover;filter:blur(2px) saturate(.95)}
+.mshade{background:#05080ca8}.hot .mshade{background:#0a0402b0}
+.sel915.main{text-align:left}
+.mtitle,.stitle{left:46px;top:34px;font:700 50px/1.02 Georgia,'Noto Serif',serif;letter-spacing:2px;color:#f4c54e;text-shadow:3px 3px 0 #241503,-2px -2px 0 #241503,2px -2px 0 #241503,-2px 2px 0 #241503}
+.stitle{font-size:38px}
+.mline{left:48px;top:148px;width:230px;height:2px;background:linear-gradient(90deg,#d9b35a,transparent)}.sline{top:88px}
+.main button{left:46px;display:flex;align-items:center;gap:13px;border:0;border-radius:0;background:none;color:#fff;padding:0 18px;text-align:left}
+.main button svg{flex:none}
+.main .mbig{width:380px}
+.main .mcont{top:166px;height:62px;border-left:7px solid #4dff7c;box-shadow:-8px 0 22px -4px #4dff7c;background:linear-gradient(90deg,#4dff7c30,transparent)}
+.main .mnew{top:238px;height:54px;border-left:7px solid #ffc933;box-shadow:-8px 0 22px -4px #ffc933;background:linear-gradient(90deg,#ffc93328,transparent)}
+.main .mcont:disabled{opacity:1;filter:grayscale(1) brightness(.62)}
+.mbig svg{width:28px;height:28px}
+.mbig span{display:flex;flex-direction:column;line-height:1.15;white-space:nowrap}
+.mbig b{font-size:31px;font-weight:800}.mnew b{font-size:28px}
+.mbig small{font-size:11px;opacity:.85}
+.main .mrow{width:260px;height:32px;padding:0 16px;border-left:3px solid #ffffff2e;color:#c9d4df;font-size:15px;font-weight:800}
+.mrow svg{width:18px;height:18px}
+.hot .main .mbig{width:420px;box-shadow:none}
+.hot .main .mcont{top:164px;height:66px;border-left:5px solid #ff8a1e;background:linear-gradient(90deg,#ff5a0040,transparent);color:#ffcf8a}
+.hot .main .mnew{border-left:5px solid #d9b35a;background:linear-gradient(90deg,#d9b35a2a,transparent);color:#f6e3ad}
+.hot .mbig b{font:700 38px/1.15 Georgia,'Noto Serif',serif}.hot .mnew b{font-size:31px}
+/* ogniste litery: wszystko, co dotyczy Hardcore */
+.fire,.hot .mcont b,.hot .ask>b,#box.hot h1{background:linear-gradient(#fff2a8,#ff9a1f 55%,#e0421a);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 0 8px #ff6a00aa);padding-bottom:2px}
+/* pytanie przed nową grą (Q9 „W miejscu”) */
+.ask{left:46px;top:292px;width:440px;height:116px;display:none;z-index:2;background:#141d29;border-left:7px solid #ffc933;border-radius:0 0 12px 0;box-shadow:0 12px 28px #000b}
+.asking .ask{display:block}.main.asking .mrow{visibility:hidden}
+.ask>*{position:absolute}
+.ask>b{left:20px;top:7px;font-size:17px;color:#ffe9a8;white-space:nowrap}
+.ask>small{left:20px;top:31px;font-size:12px;color:#cdd9e4}
+.main .ask button{left:214px;top:58px;width:180px;height:46px;justify-content:center;border:1px solid #4a6078;border-radius:10px;background:#243142;font-size:15px;font-weight:800}
+.main .ask button.red{left:20px;border:2px solid #ff9a92;background:linear-gradient(#d12f36,#80121a)}
+.hot .ask{border-left:5px solid #ff8a1e;background:#1a0d08;box-shadow:0 0 24px #ff6a00aa,0 12px 28px #000b}
+.mem{position:absolute;border-radius:50%;box-shadow:0 0 8px #ff7a18;pointer-events:none;animation:mem linear infinite}
+@keyframes mem{0%{opacity:0;transform:translate(0,0)}12%{opacity:1}100%{opacity:0;transform:translate(var(--dx),var(--dy))}}
+/* wyjście w menu głównym: zawsze w prawym dolnym rogu ekranu; X1, a przy żarze X10 */
+#box .mexit{position:absolute;right:16px;bottom:8px;width:76px;height:76px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#fff;background:radial-gradient(circle at 40% 30%,#ef4b4b,#a3151c);border:2px solid #ff9a92;box-shadow:0 4px 12px #000a;font-size:11px;font-weight:800;padding:0}
+.mexit svg{width:28px;height:28px}
+#box.hot .mexit{border-radius:14px;background:linear-gradient(#5a0f0a,#240504);border-color:#ff5a2a;box-shadow:0 0 18px #ff3a00cc,0 4px 12px #000a;color:#ffe1cf}
+/* ustawienia i autorzy */
+.main .back{top:356px;width:200px;height:40px}
+.main .setrow{width:420px;height:48px;gap:12px;padding:0 16px;border-left:3px solid #ffffff2e;background:linear-gradient(90deg,#ffffff17,transparent);font-size:17px;font-weight:800}
+.setrow i{font-style:normal;width:26px;text-align:center}
+.setrow em{font-style:normal;margin-left:auto;font-size:13px;color:#93a6b8}
+.main .setrow.on{border-left-color:#4dff7c}.setrow.on em{color:#8ee6a0}
+.setrow[aria-pressed=false] i{filter:grayscale(1);opacity:.45}
+.credits{left:46px;top:122px;width:600px;display:flex;flex-direction:column;gap:16px}
+.credits b{font:700 25px/1.2 Georgia,'Noto Serif',serif;color:#fff}
+.credits .studio{font:900 36px/1 Consolas,'Roboto Mono',monospace;color:#e9eef3}.studio i{font-style:normal;color:#35d6ff}
+.credits span{font-size:14px;line-height:1.5;color:#c9d4df}
+
+/* ranking: R6 „Złoto, srebro, brąz” z kapsułą H5; zakładka Hardcore (klasa hot) w żarze jak S10 */
+.main button.rback{left:16px;top:14px;width:110px;height:30px;justify-content:center;padding:0;border:1px solid #ffffff30;border-radius:8px;background:#17202ce0;font-size:13px;font-weight:800}
+.rtitle{left:140px;top:10px;font:700 30px/1.25 Georgia,'Noto Serif',serif;letter-spacing:1px;color:#f4c54e;text-shadow:2px 2px 0 #241503,-1px -1px 0 #241503,1px -1px 0 #241503,-1px 1px 0 #241503}
+.main button.rsrc{left:286px;top:14px;width:134px;height:30px;justify-content:center;gap:0;padding:0;border:1px solid #8ee6a0;border-radius:8px;background:#2f6b3fe6;font-size:12px;font-weight:800;white-space:nowrap}
+.rsub{left:286px;top:47px;width:134px;text-align:center;font-size:9.5px;line-height:12px;color:#a9bccd;white-space:nowrap}
+.rlist{left:0;top:0;width:915px;height:412px;pointer-events:none}
+.rrow{position:absolute}
+.rrow.me:not(.medal){border-left-color:#4dff7c;background:linear-gradient(90deg,#2f8f4599,#0e1622d6 70%)}
+.rty{display:inline-block;margin-left:7px;padding:2px 4px;border-radius:4px;background:#4dff7c;color:#06240f;font:900 9px/1 system-ui;font-style:normal;text-shadow:none;vertical-align:middle}
+.main button.rtab{top:14px;width:111px;height:30px;justify-content:center;gap:4px;padding:0;border:1px solid #ffffff30;border-radius:8px;background:#17202ce0;font-size:13px;font-weight:800}
+.main button.rtab.on{background:#f0be46;border-color:#ffe9a8;color:#1a1204}
+.main button.rtab.rhc.on{background:linear-gradient(#5a1606,#1d0703);border:2px solid #ff8a1e;box-shadow:0 0 18px #ff6a00dd;color:#ffe7c2}
+.rrow{left:16px;width:882px;height:26px;display:flex;align-items:center;gap:9px;padding:0 10px;background:#0e1622d6;border-left:3px solid #ffffff26;border-radius:4px;white-space:nowrap;color:#eef3f7;font-size:13px}
+.rrow canvas{width:22px;height:22px;flex:none}
+.rpl{width:24px;text-align:right;font-weight:900}
+.rnick{flex:1;min-width:0;overflow:hidden;font-weight:800;color:#fff;line-height:1.4;padding-left:2px;text-shadow:-1.5px -1.5px 0 #000,1.5px -1.5px 0 #000,-1.5px 1.5px 0 #000,1.5px 1.5px 0 #000,0 -2px 0 #000,0 2px 0 #000,-2px 0 0 #000,2px 0 0 #000}
+.rdiff{width:86px;font-size:10px;font-weight:800}
+.rcap{width:200px;height:21px;display:flex;align-items:center;border-radius:15px;background:#05080cb8;border:1px solid #ffffff33;font-size:11px;font-weight:700}
+.rcap>span{width:66px;display:flex;align-items:center;justify-content:center}
+.rtime{color:#a9bccd;font-weight:600}
+.rhp{gap:4px}.rhp svg{width:15px;height:15px;overflow:visible}
+.rhp path{fill:#ff3b4e;stroke:#000;stroke-width:2.4;stroke-linejoin:round}
+.rhp b{font-size:13px;font-weight:900;color:#fff;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000}
+.rhp.zero path{fill:#566173}.rhp.zero b{color:#c6cfda}
+/* liczba wyniku z ciemną obwódką, jak nick */
+.rpts{width:90px;text-align:right;font-weight:900;color:#ffd04a;letter-spacing:.6px;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000,0 -1.3px 0 #000,0 1.3px 0 #000,-1.3px 0 0 #000,1.3px 0 0 #000,0 2px 2px #000}
+.rrow.medal{height:44px;border-radius:8px;font-size:18px}
+.rrow.medal canvas{width:38px;height:38px}
+.rrow.medal .rpl{text-shadow:-1.5px -1.5px 0 #000,1.5px -1.5px 0 #000,-1.5px 1.5px 0 #000,1.5px 1.5px 0 #000,0 2px 0 #000}
+.rrow.medal .rdiff{font-size:15px}.rrow.medal .rcap{height:30px;font-size:16px}
+.rrow.medal .rhp svg{width:22px;height:22px}.rrow.medal .rhp b{font-size:19px}
+.rrow.m1{background:linear-gradient(90deg,#c89214cc,#c8921433 60%,#0e1622d6);border-left:6px solid #ffd23f}.m1 .rpl{color:#ffd23f}
+.rrow.m2{background:linear-gradient(90deg,#8f9baacc,#8f9baa33 60%,#0e1622d6);border-left:6px solid #dfe8f0}.m2 .rpl{color:#dfe8f0}
+.rrow.m3{background:linear-gradient(90deg,#9a5a2acc,#9a5a2a33 60%,#0e1622d6);border-left:6px solid #e59a5a}.m3 .rpl{color:#e59a5a}
+.rempty{left:0;right:0;top:180px;text-align:center;font-size:15px;line-height:1.6;color:#c9d4df}
+/* Hardcore */
+.hot .rtitle{background:linear-gradient(#fff2a8,#ff9a1f 55%,#e0421a);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 0 6px #ff6a00cc)}
+.hot .rsub{color:#e0ac7e}
+.hot .main button.rsrc{background:#5a1606;border-color:#ff8a1e;box-shadow:0 0 12px #ff6a00aa;color:#ffe7c2}
+.hot .rty{background:linear-gradient(#ffd23f,#ff6a00);color:#2a0c02;box-shadow:0 0 8px #ff6a00}
+.hot .rrow.me:not(.medal){border-left-color:#ffd23f;background:linear-gradient(90deg,#ff8a1e88,#1c0b05d9 70%)}
+.hot .main button.rback,.hot .main button.rtab:not(.on){background:#241008e6;border-color:#ff8a1e66;color:#ffe7c2}
+.hot .main button.rback{box-shadow:0 0 10px #ff6a0077}
+.hot .rrow{color:#ffe7c2;border-left-color:#ff8a1e;background:linear-gradient(90deg,#ff5a003d,#1c0b05d9 55%);box-shadow:-7px 0 14px -7px #ff6a00}
+.hot .rrow.m1{background:linear-gradient(90deg,#ff7a00dd,#ff3a0055 60%,#1c0b05d9);border-left-color:#ffd23f;box-shadow:0 0 20px #ff6a00cc}
+.hot .rrow.m2{background:linear-gradient(90deg,#d9480fcc,#ff3a0033 60%,#1c0b05d9);border-left-color:#ff9a3a;box-shadow:0 0 14px #ff6a0099}
+.hot .rrow.m3{background:linear-gradient(90deg,#9a2a0acc,#ff3a0022 60%,#1c0b05d9);border-left-color:#ff6a2a;box-shadow:0 0 10px #ff6a0077}
+.hot .rdiff{color:#ffb340;text-shadow:-1px 0 0 #000,1px 0 0 #000,0 -1px 0 #000,0 1px 0 #000,0 0 7px #ff6a00}
+.hot .rtime{color:#e0ac7e}.hot .rcap{border-color:#ff8a1e88;box-shadow:0 0 9px #ff6a0077}
+.hot .rhp path{fill:url(#hfire)}.hot .rhp svg{filter:drop-shadow(0 0 4px #ff6a00)}.hot .rhp.zero path{fill:#5c3524}.hot .rhp.zero svg{filter:none}
+.hot .rpts{color:#ffb340;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000,0 -1.3px 0 #000,0 1.3px 0 #000,-1.3px 0 0 #000,1.3px 0 0 #000,0 0 6px #ff6a00,0 2px 2px #000}
+.hot .rrow.m1 .rnick{background:linear-gradient(#fff2a8,#ff9a1f 55%,#e0421a);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(1.5px 0 0 #000) drop-shadow(-1.5px 0 0 #000) drop-shadow(0 1.5px 0 #000) drop-shadow(0 -1.5px 0 #000) drop-shadow(0 0 7px #ff6a00)}
+.hot .main .mem{z-index:6}
+.rrow.medal .rpts{text-shadow:-1.5px -1.5px 0 #000,1.5px -1.5px 0 #000,-1.5px 1.5px 0 #000,1.5px 1.5px 0 #000,0 -1.95px 0 #000,0 1.95px 0 #000,-1.95px 0 0 #000,1.95px 0 0 #000,0 2px 3px #000}
+.hot .rrow.medal .rpts{text-shadow:-1.5px -1.5px 0 #000,1.5px -1.5px 0 #000,-1.5px 1.5px 0 #000,1.5px 1.5px 0 #000,0 -1.95px 0 #000,0 1.95px 0 #000,-1.95px 0 0 #000,1.95px 0 0 #000,0 0 7px #ff6a00,0 2px 3px #000}
+/* ustawienia: nick (pole tekstowe musi dać się zaznaczać, mimo że reszta ekranu nie) */
+.main .nickrow{left:46px;display:flex;align-items:center;gap:12px;padding:0 16px;width:420px;border-left:3px solid #ffffff2e;background:linear-gradient(90deg,#ffffff17,transparent);font-size:17px;font-weight:800}
+.main .setrow{height:38px;font-size:16px}
+/* pytanie o publiczny ranking */
+.asknick{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:800}
+.asknick input{width:210px;height:36px;border-radius:8px;border:1px solid #4a6078;background:#0b121c;color:#fff;font:800 16px system-ui;text-align:center;user-select:text;-webkit-user-select:text}
+.nickrow input{margin-left:auto;width:176px;height:30px;padding:0 10px;border-radius:8px;border:1px solid #4a6078;background:#0b121c;color:#fff;font:800 15px system-ui;text-align:right;user-select:text;-webkit-user-select:text}
+.nickrow input:focus{outline:2px solid #f0be46}
 
 #rot{position:fixed;inset:0;background:#0b0f16;z-index:20;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;text-align:center;padding:30px}
 @media (orientation:portrait) and (pointer:coarse){#rot.show{display:flex}}
@@ -234,6 +365,7 @@ button:disabled{opacity:.45;cursor:default}
     <div id="tag">⏸ PAUZA</div>
     <button id="orb-speed" class="orb"><b id="spd">×1</b><span>Prędkość</span></button>
     <button id="orb-menu" class="orb"><b>🏠</b><span>Menu</span></button>
+    <button id="orb-exit" class="orb" aria-label="Wyjście z gry"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 3H4v18h7 M10 12h11 M17 8l4 4-4 4"/></svg><span>Wyjście</span><i class="ember3" style="left:8px;top:-4px;--dx:-8px;animation-delay:-.1s"></i><i class="ember3" style="left:22px;top:-12px;--dx:6px;animation-delay:-.5s"></i><i class="ember3" style="left:44px;top:-6px;--dx:-4px;animation-delay:-.9s"></i><i class="ember3" style="left:60px;top:2px;--dx:10px;animation-delay:-.3s"></i><i class="ember3" style="left:34px;top:-16px;--dx:2px;animation-delay:-.7s"></i></button>
     <svg id="ring" viewBox="0 0 140 140"><circle class="trk" cx="70" cy="70" r="58"/><circle class="arc" id="arc" cx="70" cy="70" r="58" pathLength="100" transform="rotate(-90 70 70)"/></svg>
     <button id="go" aria-label="Start fali, przytrzymaj 2 sekundy, żeby zatrzymać grę"></button>
     <div id="sparks"></div>
@@ -251,6 +383,7 @@ button:disabled{opacity:.45;cursor:default}
 <script src="roads.js"></script>
 <script src="game.js"></script>
 <script src="sfx.js"></script>
+<script src="online.js"></script>
 <script src="ui.js"></script>
 </body>
 </html>

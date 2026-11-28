@@ -15,8 +15,9 @@
   var u5 = { view: 'orbs', info: false, sure: false }, baseDirty = true;
   var pick = { faction: null, diff: 'normal' };
   var SAVE = 'bib-demo2-save', LAST = 'bib-demo2-last', PICK = 'bib-demo2-pick', SET = 'bib-demo2-set';
-  var cfg = { sound: true, vib: true };
+  var cfg = { sound: true, vib: true, nick: '', share: null };     // share: null = jeszcze nie pytaliśmy o publiczny ranking
   var APP = !!window.BibApp;      // w aplikacji na Androida działa mostek do systemu
+  var DOOR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 3H4v18h7 M10 12h11 M17 8l4 4-4 4"/></svg>';
   function say(id, buzz) { SFX.play(id); if (buzz) SFX.buzz(buzz === true ? id : buzz); }
   var awake = null;
   /* ekran nie gaśnie w trakcie gry; w menu wraca zwykłe wygaszanie */
@@ -645,6 +646,7 @@
   function updateGlow() {
     var cls = '';
     if (modal === 'menu') cls = pick.diff === 'hardcore' ? 'on' : '';
+    else if (inMenu()) cls = '';                     // menu główne ma własny żar (S10)
     else if (modal !== 'intro-logo' && modal !== 'intro-title' && S() && S().hc) cls = burning() ? 'on' : 'low';
     if ($('glow').className !== cls) $('glow').className = cls;
     stageEl.classList.toggle('hc', !!(S() && S().hc));
@@ -742,8 +744,28 @@
   $('orb-speed').addEventListener('click', function () { speed = speed >= 3 ? 1 : speed + 1; say('tap'); updateGo(); });
   $('orb-menu').addEventListener('click', function () {
     if (S().phase === 'wave') plain('<h1>Na pewno?</h1><p>Wyjście przerwie falę ' + S().wave + '. Po wznowieniu zacznie się od początku.</p><div class="btns"><button data-a="tomenu">Wyjdź do menu</button><button class="main" data-a="close">Zostań</button></div>', 'confirm');
-    else menuScreen();
+    else { persist(); mainMenu(); }
   });
+
+  $('orb-exit').addEventListener('click', function () { say('tap'); exitAsk('game'); });
+
+  /* ---------- wyjście z aplikacji (przeglądarka nie pozwala stronie zamknąć karty, więc tylko w aplikacji) ---------- */
+  var exitFrom = 'menu';
+  function exitAsk(from) {
+    exitFrom = from;
+    var s = S(), text;
+    if (from === 'menu') text = savedInfo(fetchStore(SAVE)) ? 'Zapisana gra zostanie na później.' : 'Gra się zamknie.';
+    else if (s.phase === 'wave') text = 'Fala ' + s.wave + ' zacznie się od początku. Gra zapisała się przed jej startem.';
+    else text = 'Gra zostanie zapisana.';
+    plain('<h1>Wyjść z gry?</h1><p>' + text + '</p><div class="btns"><button data-a="stay">Zostań</button><button class="danger" data-a="quit">Wyjdź</button></div>', 'exitask');
+  }
+  function exitStay() { if (exitFrom === 'menu') mainMenu(); else hide(); }         // z gry wraca do pauzy
+  function exitGame() {
+    tickClock(); saveClock();
+    if (exitFrom === 'game' && S() && !S().result) persist();                       // w trakcie fali zostaje zapis sprzed niej
+    SFX.suspend();
+    window.BibApp.exit();
+  }
 
   /* ---------- panel wieży U5 ---------- */
   function select(t) {
@@ -907,14 +929,14 @@
   function hide() { modal = null; $('ov').className = ''; updatePanel(); }
   function pathKey() { return '<div class="legend-key">' + DATA.PATH_IDS.map(function (id) { return '<span style="border-color:' + DATA.PATHS[id].col + '">' + DATA.PATHS[id].n + '</span>'; }).join('') + '</div>'; }
 
-  /* intro: logo → nazwa gry → wybór zamku; twarde cięcia, stuknięcie przeskakuje */
+  /* intro: logo → nazwa gry → menu główne; twarde cięcia, stuknięcie przeskakuje */
   function intro(step) {
     clearTimeout(introT);
     if (step === 0) show('<div class="scr logo" data-a="skip"><div class="name">m<i>AI</i>n<i>IA</i>c</div><div class="dev">dev<i>_</i></div></div>', 'intro-logo', true);
     else if (step === 1) {
       show('<div class="scr titlescr" data-a="skip"><canvas id="tcastle" width="380" height="440"></canvas><h2>OSTATNI BASTION</h2></div>', 'intro-title', true);
       thumb($('tcastle'), 'castle_crown');
-    } else { menuScreen(); return; }
+    } else { mainMenu(); return; }
     introT = setTimeout(function () { intro(step + 1); }, 2000);
   }
   var menuMap = null;
@@ -924,30 +946,274 @@
     var g = c.getContext('2d'); g.scale(0.5, 0.5);
     paintGround(g, DATA.THEMES[0], menuMap.road, menuMap.seed);
   }
+  /* tło menu głównego (G17): ta sama łąka z wieżami przy drodze i wrogami na drodze */
+  function drawBattle(c) {
+    drawMenuMap(c);
+    var g = c.getContext('2d'), road = menuMap.road, set = {}, list = [], seed = menuMap.seed;
+    function rnd() { seed = (seed * 16807 + 11) % 2147483647; return (seed & 0xffff) / 0x10000; }
+    road.forEach(function (p) { set[p[0] + ',' + p[1]] = 1; });
+    var kinds = ['archer', 'bombard', 'lookout', 'windmill'], placed = [];
+    for (var i = 2; i < road.length - 2 && placed.length < 8; i += 3) {
+      var side = [[0, -1], [0, 1], [1, 0], [-1, 0]].filter(function (d) {
+        var x = road[i][0] + d[0], y = road[i][1] + d[1];
+        return x >= 0 && x < 16 && y >= 0 && y < 9 && !set[x + ',' + y] && !placed.some(function (q) { return Math.abs(q[0] - x) + Math.abs(q[1] - y) < 2; });
+      })[0];
+      if (!side) continue;
+      var tx = road[i][0] + side[0], ty = road[i][1] + side[1];
+      placed.push([tx, ty]);
+      list.push({ name: 't_crown_' + kinds[placed.length % 4], x: sx(tx), y: sy(ty) + 22 });
+    }
+    for (var j = 1; j < road.length - 3; j += 2) if (rnd() < 0.6) list.push({ name: 'e_aliens_' + (rnd() * 3 | 0) + '_r_' + (rnd() * 6 | 0), x: sx(road[j][0]) + (rnd() - 0.5) * 30, y: sy(road[j][1]) + FOOT });
+    var end = road[road.length - 1];
+    for (var c2 = 0; c2 < 16; c2++) for (var r2 = 0; r2 < 9; r2++) {      // drzewa z dala od drogi i zamku
+      var far = !road.some(function (z) { return Math.abs(z[0] - c2) <= 1 && Math.abs(z[1] - r2) <= 1; }) && (Math.abs(c2 - end[0] - 2) > 2 || Math.abs(r2 - end[1]) > 2);
+      if (far && rnd() < 0.3) list.push({ name: 'd_meadow_' + (rnd() * 6 | 0), x: sx(c2), y: sy(r2) + 22 });
+    }
+    list.push({ name: 'castle_crown', x: sx(end[0]) + CW * 1.4, y: sy(end[1]) + 52 });
+    list.sort(function (a, b) { return a.y - b.y; }).forEach(function (o) { sprite(g, o.name, o.x, o.y, 1); });
+  }
+
+  /* ---------- menu główne (G17): S5, a przy zapisanej grze Hardcore S10 „Żar” ---------- */
+  var MENU_ICO = {
+    play: '<path d="M7 4.5v15l12.5-7.5z" fill="currentColor"/>',
+    fresh: '<path d="M4 4l10 10M20 4 10 14M6.5 13.5l4 4M17.5 13.5l-4 4M8.5 15.5 4.5 19.5M15.5 15.5l4 4"/>',
+    rank: '<path d="M7 4h10v5a5 5 0 0 1-10 0zM7 6H4a3 3 0 0 0 3.5 4M17 6h3a3 3 0 0 1-3.5 4M12 14v4M8 20h8"/>',
+    set: '<circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="7"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/>',
+    who: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M16 5a3 3 0 0 1 0 6M18 14c2.3.8 3.5 2.8 3.5 6"/>'
+  };
+  function mico(name) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + MENU_ICO[name] + '</svg>'; }
+  function savedData() {
+    var text = fetchStore(SAVE), info = savedInfo(text);
+    return info ? { info: info, hc: !!(DATA.DIFF[JSON.parse(text).diff] || {}).hc } : null;
+  }
+  /* żar unoszący się od dołu ekranu albo od dołu pytania */
+  function emberHTML(n, x0, w, y0, h, rise) {
+    var seed = 5, out = '';
+    function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
+    for (var i = 0; i < n; i++) {
+      var z = 3 + (rnd() * 4 | 0), du = 2.4 + rnd() * 2.4;
+      out += '<i class="mem" style="left:' + (x0 + rnd() * w | 0) + 'px;top:' + (y0 + rnd() * h | 0) + 'px;width:' + z + 'px;height:' + z + 'px;--dx:' + (rnd() * 100 - 50 | 0) + 'px;--dy:-' + rise + 'px;animation-duration:' + du.toFixed(2) + 's;animation-delay:-' + (rnd() * du).toFixed(2) + 's;background:' + ['#ffd23f', '#ff8a1e', '#ff5a1e'][i % 3] + '"></i>';
+    }
+    return out;
+  }
+  function screenBase(kind, inner, hot, corner) {
+    tickClock(); saveClock();
+    closeU5(); setW2('idle'); buildType = null; drag = null; hover = null; setDrawer(false);
+    $('fx').innerHTML = ''; $('hint').className = '';
+    show('<canvas id="menubg" class="soft"></canvas><div class="shade mshade"></div><div class="sel915 main">' + inner + '</div>' + (corner || ''), kind, true);
+    $('box').className = hot ? 'hot' : '';
+    drawBattle($('menubg'));
+  }
+  function mainMenu() {
+    var sv = savedData(), hot = !!(sv && sv.hc);
+    var html = (hot ? emberHTML(26, 0, 910, 300, 116, 280) : '') + '<div class="mtitle">OSTATNI<br>BASTION</div><i class="mline"></i>';
+    html += '<button class="mbig mcont" data-a="resume"' + (sv ? '' : ' disabled') + '>' + mico('play') + '<span><b>Kontynuuj</b><small>' + (sv ? sv.info : 'brak zapisu') + '</small></span></button>';
+    html += '<button class="mbig mnew" data-a="newgame">' + mico('fresh') + '<span><b>Nowa gra</b></span></button>';
+    [['rank', 'Ranking'], ['set', 'Ustawienia'], ['who', 'Autorzy']].forEach(function (m, i) {
+      html += '<button class="mrow" data-a="' + m[0] + '" style="top:' + (306 + i * 35) + 'px">' + mico(m[0]) + m[1] + '</button>';
+    });
+    /* pytanie Q9 „W miejscu”: rozwija się pod „Nowa gra”, gdy jest zapisana gra */
+    if (sv) html += '<div class="ask">' + (hot ? emberHTML(16, 0, 430, 80, 34, 120) : '') + '<b>Zastąpić zapisaną grę?</b><small>' + sv.info + '</small><button class="red" data-a="replace">Zastąp</button><button data-a="askno">Anuluj</button></div>';
+    /* wyjście tylko w aplikacji: X1, a w menu z żarem X10 */
+    screenBase('main', html, hot, APP ? '<button class="mexit" data-a="exit" aria-label="Wyjście z gry">' + DOOR + '<span>Wyjście</span></button>' : '');
+  }
+  function askNew(open) {
+    var m = $('box').querySelector('.main');
+    if (m) m.classList.toggle('asking', open);
+  }
+  function askOpen() { var m = $('box').querySelector('.main'); return !!(m && m.classList.contains('asking')); }
+  function subScreen(kind, title, inner) {
+    screenBase(kind, '<div class="stitle">' + title + '</div><i class="mline sline"></i>' + inner + '<button class="mrow back" data-a="tomenu">‹ Wstecz</button>', false);
+  }
+  function setRow(key, ico, label, top) {
+    var on = cfg[key] === true;
+    return '<button class="setrow' + (on ? ' on' : '') + '" data-a="' + key + '" style="top:' + top + 'px" aria-pressed="' + on + '"><i>' + ico + '</i>' + label + '<em>' + (on ? 'włączone' : 'wyłączone') + '</em></button>';
+  }
+  function settingsScreen() {
+    subScreen('settings', 'Ustawienia', '<label class="setrow nickrow" style="top:100px"><i>👤</i>Nick<input id="nick" maxlength="' + NICK_MAX + '" placeholder="Anonim" autocomplete="off" autocapitalize="off" spellcheck="false" value="' + cfg.nick + '"></label>' +
+      setRow('sound', '🔊', 'Dźwięk', 142) + setRow('vib', '📳', 'Wibracje', 184) + setRow('share', '🌍', 'Wysyłaj wyniki do rankingu', 226) +
+      '<button class="setrow" data-a="help" style="top:268px"><i>❓</i>Jak grać<em>›</em></button>' +
+      (APP ? '' : '<button class="setrow" data-a="full" style="top:310px"><i>⛶</i>Pełny ekran<em>›</em></button>'));
+  }
+  /* nick trafia do HTML, więc znaki specjalne odpadają */
+  var NICK_MAX = ONLINE.NICK_MAX, cleanNick = ONLINE.cleanNick;
+  $('ov').addEventListener('input', function (ev) {
+    if (ev.target.id !== 'nick' && ev.target.id !== 'gamenick') return;
+    var v = cleanNick(ev.target.value);
+    if (v !== ev.target.value) ev.target.value = v;
+    if (ev.target.id === 'nick') { cfg.nick = v; store(SET, JSON.stringify(cfg)); }       // Ustawienia i pytanie o zgodę
+  });
+  $('ov').addEventListener('keydown', function (ev) { if ((ev.target.id === 'nick' || ev.target.id === 'gamenick') && ev.key === 'Enter') ev.target.blur(); });
+  function keepGameNick() {
+    var inp = $('gamenick');
+    if (!inp) return;                   // „Jeszcze raz” po grze: zostaje ostatnio użyty
+    cfg.nick = cleanNick(inp.value).trim();
+    store(SET, JSON.stringify(cfg));
+  }
+  function shownNick() { return cfg.nick.trim() || 'Anonim'; }
+  function authorsScreen() {
+    subScreen('authors', 'Autorzy', '<div class="credits"><b class="studio">m<i>AI</i>n<i>IA</i>c dev</b><b>Claudiusz Sonnet V Wielki</b><span>Grafiki: KayKit, Kay Lousberg (licencja CC0)</span></div>');
+  }
+  /* Ranking: szkic R6 „Złoto, srebro, brąz” z kapsułą H5 (fala, serce z HP, czas). Lista publiczna z online.js. */
+  var HEART = 'M12 21.4C12 21.4 1.8 15.2 1.8 8.4 1.8 5.3 4.2 3 7.2 3 9.2 3 11 4.1 12 5.9 13 4.1 14.8 3 16.8 3 19.8 3 22.2 5.3 22.2 8.4 22.2 15.2 12 21.4 12 21.4Z';
+  var HEART_FIRE = '<svg width="0" height="0" style="left:0;top:0"><defs><linearGradient id="hfire" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe46a"/><stop offset=".55" stop-color="#ff8a1e"/><stop offset="1" stop-color="#d8330f"/></linearGradient></defs></svg>';
+  var rankTab = null, rankSrc = 'all';            // 'all' = wszyscy gracze, 'mine' = ten telefon
+  var netState = 'idle', netAt = 0, NET_FRESH = 30000;
+  function two(n) { return (n < 10 ? '0' : '') + n; }
+  function when(at, day) { var d = new Date(at); return (day ? two(d.getDate()) + '.' + two(d.getMonth() + 1) + ' ' : '') + two(d.getHours()) + ':' + two(d.getMinutes()); }
+  /* e.nick pochodzi z sieci albo z Ustawień; oba przeszły przez cleanNick */
+  function rankRow(e, i, y, nick, me) {
+    var f = DATA.FACTIONS.filter(function (x) { return x.id === e.castle; })[0], size = i < 3 ? 38 : 22;
+    if (!f) return '';
+    return '<div class="rrow' + (i < 3 ? ' medal m' + (i + 1) : '') + (me ? ' me' : '') + '" style="top:' + y + 'px">' +
+      '<b class="rpl">' + (i + 1) + '</b><canvas width="' + size * 2 + '" height="' + size * 2 + '" data-th="castle_' + f.id + '" role="img" aria-label="' + f.n + '"></canvas>' +
+      '<b class="rnick">' + nick + (me ? '<em class="rty">TY</em>' : '') + '</b><b class="rdiff">' + DATA.DIFF[rankTab].n + '</b>' +
+      '<span class="rcap"><span>fala ' + (+e.wave) + '</span><span class="rhp' + (e.hp > 0 ? '' : ' zero') + '" aria-label="HP zamku ' + (+e.hp) + '"><svg viewBox="0 0 24 24"><path d="' + HEART + '"/></svg><b>' + (+e.hp) + '</b></span><span class="rtime">' + clockText(+e.time) + '</span></span>' +
+      '<b class="rpts">' + String(+e.score).replace(/\B(?=(\d{3})+$)/g, ' ') + '</b></div>';
+  }
+  function paintRank() {
+    if (modal !== 'rank') return;
+    var all = rankSrc === 'all', pub = all ? ONLINE.cached() : null, mine = ranking(), own = {};
+    Object.keys(mine).forEach(function (k) { mine[k].forEach(function (e) { if (e.id) own[e.id] = true; }); });
+    var list = all ? (pub ? pub.lists[rankTab] : []) : (mine[rankTab] || []).slice(0, 10), y = 60, html = '';
+    list.forEach(function (e, i) {
+      html += rankRow(e, i, y, all ? e.nick : cleanNick(e.nick) || shownNick(), all && !!own[e.id]);      // starsze wpisy nie mają nicku
+      y += i < 3 ? 49 : 28;
+    });
+    if (!list.length) {
+      var text = !all ? 'Brak wyników na tym poziomie.<br>Dokończ grę, a wynik pojawi się tutaj.'
+        : !pub && netState === 'loading' ? 'Pobieram listę…'
+          : !pub ? 'Nie udało się pobrać listy.<br>Sprawdź internet albo przełącz na „Mój telefon”.'
+            : 'Nikt jeszcze nie ma wyniku na tym poziomie.' + (cfg.share === true ? '' : '<br>Wysyłanie swoich wyników włączysz w Ustawieniach.');
+      html = '<div class="rempty">' + text + '</div>';
+    }
+    var waiting = all && netState !== 'loading' ? ONLINE.queue().length : 0;
+    $('rstat').textContent = !all ? 'zapisane w telefonie' : waiting ? 'czeka na wysłanie: ' + waiting : netState === 'loading' ? 'pobieram…'
+      : netState === 'fail' ? (pub ? 'brak sieci, z ' + when(pub.at, true) : 'brak połączenia') : pub ? 'stan z ' + when(pub.at, false) : '';
+    $('rlist').innerHTML = html;
+    Array.prototype.forEach.call($('rlist').querySelectorAll('canvas[data-th]'), function (c) { thumb(c, c.getAttribute('data-th')); });
+  }
+  /* najpierw wysyła to, co czeka, potem pobiera listę; świeżej nie pobiera drugi raz */
+  function refreshRank() {
+    if (rankSrc !== 'all' || netState === 'loading' || (netState === 'ok' && Date.now() - netAt < NET_FRESH)) return;
+    netState = 'loading';
+    paintRank();
+    var sent = cfg.share === true ? ONLINE.flush() : Promise.resolve();
+    sent.then(ONLINE.load).then(function () { netState = 'ok'; netAt = Date.now(); paintRank(); }, function () { netState = 'fail'; paintRank(); });
+  }
+  function rankScreen(tab) {
+    var ids = Object.keys(DATA.DIFF);
+    rankTab = DATA.DIFF[tab] ? tab : DATA.DIFF[pick.diff] ? pick.diff : 'normal';
+    var hot = !!DATA.DIFF[rankTab].hc;
+    var html = HEART_FIRE + '<button class="rback" data-a="tomenu">‹ Wstecz</button><div class="rtitle">Ranking</div>' +
+      '<button class="rsrc" data-a="rsrc" aria-label="Zmień listę: wszyscy gracze albo ten telefon">' + (rankSrc === 'all' ? '🌍 Wszyscy' : '📱 Mój telefon') + ' ⇄</button><div class="rsub" id="rstat"></div>';
+    ids.forEach(function (k, i) {
+      html += '<button class="rtab' + (k === rankTab ? ' on' : '') + (DATA.DIFF[k].hc ? ' rhc' : '') + '" data-rt="' + k + '" aria-pressed="' + (k === rankTab) + '" style="left:' + (430 + i * 119) + 'px">' + (DATA.DIFF[k].hc ? '☠ <b class="fire">' + DATA.DIFF[k].n + '</b>' : DATA.DIFF[k].n) + '</button>';
+    });
+    screenBase('rank', html + '<div class="rlist" id="rlist"></div>' + (hot ? emberHTML(22, 0, 910, 300, 116, 280) : ''), hot);
+    paintRank();
+    refreshRank();
+  }
+  function inMenu() { return /^(main|menu|settings|authors|rank|help)$/.test(modal) || (modal === 'exitask' && exitFrom === 'menu'); }
+
+  /* ---------- zegar Hardcore ---------- */
+  /* Do rankingu liczy się prawdziwy czas gry. Nie zatrzymuje go pauza, panel wieży, okno w grze ani zejście aplikacji w tło;
+     stoi tylko, gdy gra jest zamknięta (menu główne, wyjście). Leży też obok zapisu, bo zapis powstaje przed falą,
+     a czas przerwanej fali nie może przepaść. */
+  var CLOCK = 'bib-demo2-clock', wall = Date.now(), clockSaved = 0;
+  function tickClock() {
+    var t = Date.now(), d = Math.max(0, (t - wall) / 1000), s = S();
+    wall = t;
+    if (!s || !s.hc || s.result || inMenu() || /^intro/.test(modal)) return;
+    s.real += d;
+    if (s.phase === 'wave') {           // czas bieżącej fali; przy powtórce tej samej fali rośnie dalej
+      if (s.wn !== s.wave) { s.wn = s.wave; s.wt = 0; }
+      s.wt += d;
+    }
+    if (t - clockSaved > 1000) saveClock();
+  }
+  function saveClock() {
+    var s = S();
+    if (!s || !s.hc || s.result) return;
+    clockSaved = Date.now();
+    store(CLOCK, JSON.stringify({ seed: s.seed, real: s.real, wn: s.wn, wt: s.wt }));
+  }
+  function loadClock() {
+    var s = S(), c = null;
+    try { c = JSON.parse(fetchStore(CLOCK) || 'null'); } catch (e) { }
+    if (s.hc && c && c.seed === s.seed && c.real > s.real) { s.real = c.real; s.wn = c.wn || 0; s.wt = c.wt || 0; }
+  }
+
+  /* ---------- wyniki w telefonie: osobne top 10 dla każdej trudności ---------- */
+  var RANK = 'bib-demo2-rank';
+  function ranking() {
+    try { var r = JSON.parse(fetchStore(RANK) || '{}'); return r && typeof r === 'object' ? r : {}; } catch (e) { return {}; }
+  }
+  /* kolejność: najdalsza fala, potem więcej HP zamku, potem krótszy czas (w Hardcore cały czas gry, poza nim sama walka) */
+  function rankOrder(a, b) { return b.wave - a.wave || b.hp - a.hp || a.time - b.time; }
+  function recordResult(s) {
+    var all = ranking(), list = all[s.did] || [];
+    var entry = { id: ONLINE.newId(), nick: shownNick(), castle: s.f.id, wave: s.wave, hp: s.hp, time: Math.round(s.hc ? s.real : s.fight), score: s.score, win: s.result === 'win', at: Date.now() };
+    list.push(entry);
+    all[s.did] = list.sort(rankOrder).slice(0, 10);
+    store(RANK, JSON.stringify(all));
+    return entry;
+  }
+
+  function renameEntry(w, nick) {
+    w.entry.nick = nick;
+    var all = ranking();
+    (all[w.diff] || []).forEach(function (e) { if (e.id === w.entry.id) e.nick = nick; });
+    store(RANK, JSON.stringify(all));
+  }
+
+  /* ---------- publiczny ranking: zgoda i wysyłka ---------- */
+  var consentWait = null;
+  function sendResult(w) {
+    var e = w.entry;
+    ONLINE.add({ game: 'ostatni-bastion-demo', id: e.id, nick: e.nick, diff: w.diff, castle: e.castle, wave: e.wave, hp: e.hp, time: e.time, score: e.score });
+    netAt = 0;                          // przy następnym otwarciu rankingu pobierz listę od nowa
+    ONLINE.flush();
+  }
+  /* pytanie przed pierwszym wysłaniem; potem decyduje przełącznik w Ustawieniach */
+  function consentScreen() {
+    plain('<h1>Publiczny ranking</h1><p style="font-size:14px;color:#fff">Czy Twoje wyniki mają być widoczne dla wszystkich graczy?<br>Po każdej skończonej grze wyślemy: <b>nick, trudność, zamek, falę, HP zamku, czas i punkty</b> (z losowym numerem wpisu).</p>' +
+      '<p>Lista działa na serwerach Google. Decyzję zmienisz w Ustawieniach.</p>' +
+      '<label class="asknick">Nick <input id="nick" maxlength="' + NICK_MAX + '" placeholder="Anonim" autocomplete="off" autocapitalize="off" spellcheck="false" value="' + cfg.nick + '"></label>' +
+      '<div class="btns"><button data-a="share-no">Nie wysyłaj</button><button class="main" data-a="share-yes">Wysyłaj</button></div>', 'consent');
+  }
+  function consentAnswer(yes) {
+    var w = consentWait;
+    consentWait = null;
+    cfg.share = yes;
+    store(SET, JSON.stringify(cfg));
+    if (!w) { mainMenu(); return; }
+    renameEntry(w, shownNick());        // w pytaniu można było jeszcze poprawić nick
+    if (yes) sendResult(w); else ONLINE.clear();
+    plain(w.html, 'end');
+  }
+
   /* wybór zamku: tło i pozostałe zamki rozmyte, ostry tylko wybrany; w Hardcore dochodzi żar */
   function menuScreen() {
     closeU5(); setW2('idle'); buildType = null; drag = null; hover = null; setDrawer(false);
     $('fx').innerHTML = ''; $('hint').className = '';
-    var saved = fetchStore(SAVE), hc = pick.diff === 'hardcore';
+    var hc = pick.diff === 'hardcore';
     var html = '<canvas id="menubg"></canvas><div class="shade"></div><div class="sel915"><h1>Wybierz zamek</h1>';
     DATA.FACTIONS.forEach(function (f, i) {
       html += '<button class="fc' + (pick.faction === f.id ? ' on' : '') + '" data-f="' + f.id + '" style="left:' + (20 + i * 222) + 'px"><canvas width="300" height="320" data-th="castle_' + f.id + '"></canvas><b>' + f.n + '</b><span>' + f.trait + '</span><span class="gate">★ ' + f.leg.n + '</span><span class="hpl">🔥 start: 1 / ' + (20 + (f.hp || 0)) + ' HP</span></button>';
     });
     var xs = [[14, 78], [98, 94], [198, 74], [278, 112]];
-    Object.keys(DATA.DIFF).forEach(function (k, i) { html += '<button class="df' + (pick.diff === k ? ' on' : '') + '" data-d="' + k + '" style="left:' + xs[i][0] + 'px;width:' + xs[i][1] + 'px">' + (k === 'hardcore' ? '☠ ' : '') + DATA.DIFF[k].n + '</button>'; });
-    html += '<button class="play" data-a="new" style="left:400px;width:150px"' + (pick.faction ? '' : ' disabled') + '>▶ Graj</button>';
-    var info = savedInfo(saved);
-    html += '<button class="df" data-a="resume" style="left:560px;width:' + (APP ? 190 : 124) + 'px;line-height:1.1"' + (info ? '' : ' disabled') + '>Wznów grę' + (info ? '<br><span style="font-size:10px;font-weight:400">' + info + '</span>' : '') + '</button>';
-    html += '<button class="df" data-a="help" style="left:' + (APP ? 758 : 692) + 'px;width:' + (APP ? 142 : 136) + 'px">Jak grać</button>';
-    if (!APP) html += '<button class="df" data-a="full" style="left:836px;width:64px" aria-label="Pełny ekran">⛶</button>';
-    html += '<button class="tgl' + (cfg.sound ? '' : ' off') + '" data-a="sound" style="left:806px" aria-label="Dźwięk">🔊</button>';
-    html += '<button class="tgl' + (cfg.vib ? '' : ' off') + '" data-a="vib" style="left:856px" aria-label="Wibracje">📳</button></div>';
+    Object.keys(DATA.DIFF).forEach(function (k, i) { html += '<button class="df' + (pick.diff === k ? ' on' : '') + '" data-d="' + k + '" style="left:' + xs[i][0] + 'px;width:' + xs[i][1] + 'px">' + (k === 'hardcore' ? '☠ <b class="fire">' + DATA.DIFF[k].n + '</b>' : DATA.DIFF[k].n) + '</button>'; });
+    /* nick na tę grę; zapamiętuje się dopiero po „Graj”, więc „Wstecz” nie zmienia ostatnio użytego */
+    html += '<label class="selnick">Nick <input id="gamenick" maxlength="' + NICK_MAX + '" placeholder="Anonim" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" value="' + cfg.nick + '"></label>';
+    html += '<button class="play" data-a="new" style="left:400px;width:300px"' + (pick.faction ? '' : ' disabled') + '>▶ Graj</button>';
+    html += '<button class="df" data-a="tomenu" style="left:712px;width:189px">‹ Wstecz</button></div>';
     show(html, 'menu', true);
     $('box').className = (pick.faction ? 'picked ' : '') + (hc ? 'ishc' : '');
     drawMenuMap($('menubg'));
     Array.prototype.forEach.call($('box').querySelectorAll('canvas[data-th]'), function (c) { thumb(c, c.getAttribute('data-th')); });
   }
-  /* krótki opis zapisu na przycisku „Wznów grę”; null, gdy zapisu nie da się odczytać */
+  /* krótki opis zapisu na przycisku „Kontynuuj”; null, gdy zapisu nie da się odczytać */
   function savedInfo(text) {
     try {
       var d = JSON.parse(text);
@@ -964,18 +1230,25 @@
     box.querySelector('[data-a="new"]').disabled = !pick.faction;
     updateGlow();
   }
-  function plain(html, kind) { $('box').className = ''; show(html, kind); }
+  /* Okna nad grą; wszystko związane z Hardcore ma ogniste nagłówki (klasa hot). */
+  function plain(html, kind) {
+    var sv = savedData(), hot = kind === 'exitask' && exitFrom === 'menu' ? !!(sv && sv.hc) : kind !== 'help' && !!(S() && S().hc);
+    $('box').className = hot ? 'hot' : '';
+    show(html, kind);
+  }
   function helpScreen() {
     plain('<h1>Jak grać</h1><p style="text-align:left">• <b>Budowa:</b> stuknij „Wieże”, potem przeciągnij wieżę z paska na planszę (można też stuknąć wieżę, a potem pole). Na czas stawiania plansza wypełnia ekran i przesuwa się za palcem; żeby anulować, puść w lewym górnym rogu.<br>' +
       '• <b>Przestawianie:</b> między falami przeciągnij wieżę na inne pole. Za darmo.<br>• <b>Przycisk fali:</b> krótkie stuknięcie uruchamia falę. Przytrzymanie przez 2 s zatrzymuje grę i pokazuje prędkość i menu.<br>' +
-      (APP ? '• <b>„Wstecz” w telefonie:</b> tylko zatrzymuje grę. Wznawiasz przyciskiem fali, do menu wchodzisz kółkiem „Menu”.<br>' : '') +
+      (APP ? '• <b>„Wstecz” w telefonie:</b> tylko zatrzymuje grę. Wznawiasz przyciskiem fali, do menu wchodzisz kółkiem „Menu”.<br>• <b>Wyjście:</b> grę zamyka czerwony przycisk w menu głównym albo w menu przycisku fali.<br>' : '') +
+      '• <b>Punkty:</b> za pokonanych wrogów z fali i bossów (przywołani przez bossa i powstali z rozpadu nie liczą się). Po każdej odpartej fali dostajesz ' + DATA.SCORE.hp + ' pkt za każde HP zamku i ' + DATA.SCORE.time + ' pkt za każdą sekundę przed limitem fali. Limit to czas, w którym wyjdą wszyscy wrogowie i można by przejść całą drogę wolnym marszem. W Hardcore do czasu fali liczą się też pauzy.<br>' +
       '• <b>Limit:</b> miejsc przybywa z falami (3, 4, 5, 6, 7), od fali 15 dochodzi miejsce na bramę. Najwyżej 3 wieże jednego rodzaju.<br>' +
       '• <b>Brama:</b> staje na prostej drodze i zajmuje po jednym polu z obu stron. Atakuje pod łukiem i po 2 kratki drogi przed i za nim.<br>' +
       '• <b>Ulepszenia:</b> stuknij wieżę. Pierwszy wybór wyznacza ścieżkę. Kolor obramówki to ścieżka: cienka to poziom I, gruba II–III, z poświatą IV.<br>' +
       '• <b>Reakcje:</b> Mróz + Stal (+25% Stali w spowolnionych), Ogień + Trucizna (wybuch), Mróz + Piorun (dodatkowy przeskok). Ogień zdejmuje spowolnienie.<br>' +
+      '• <b>Ranking:</b> lista „Wszyscy” wymaga internetu. Swoje wyniki wysyłasz tylko za zgodą; zmienisz to w Ustawieniach. „Mój telefon” działa bez internetu.<br>' +
       '• <b>Sąsiedztwo:</b> każda inna ścieżka obok to +8% obrażeń (do +24%).<br>' +
-      '• <b>Hardcore:</b> zamek zaczyna z 1 HP i płonie, dopóki ma 30% HP lub mniej. Wrogowie są mocniejsi, bossowie mają losową odporność, a pokonany boss daje +2 HP.</p>' + pathKey() +
-      '<div class="btns"><button class="main" data-a="tomenu">Wróć</button></div>', 'help');
+      '• <b>Hardcore:</b> zamek zaczyna z 1 HP i płonie, dopóki ma 30% HP lub mniej. Wrogowie są mocniejsi, bossowie mają losową odporność, a pokonany boss daje +2 HP. Do rankingu liczy się cały czas gry, także pauza; zegar stoi tylko w menu głównym i po wyjściu z gry.</p>' + pathKey() +
+      '<div class="btns"><button class="main" data-a="set">Wróć</button></div>', 'help');
   }
   function startInfo() {
     var s = S();
@@ -991,25 +1264,35 @@
     html += '</div><div class="btns"><button data-a="close">Później</button></div>';
     plain(html, 'castle');
   }
+  function clockText(sec) { var t = Math.round(sec); return Math.floor(t / 60) + ':' + (t % 60 < 10 ? '0' : '') + (t % 60); }
   function endScreen() {
     var s = S(), win = s.result === 'win';
-    store(SAVE, null);
+    store(SAVE, null); store(CLOCK, null);
+    var entry = recordResult(s);
     closeU5(); setW2('idle'); buildType = null; drag = null;
     say(win ? 'win' : 'lose', true);
     var paths = {};
     s.towers.forEach(function (t) { if (t.path) paths[DATA.PATHS[t.path].n] = (paths[DATA.PATHS[t.path].n] || 0) + 1; });
-    plain('<h1>' + (win ? 'Bastion obroniony!' : 'Zamek padł') + '</h1><p style="font-size:15px;color:#fff">' + s.f.n + ' · ' + s.diff.n + '<br>' + s.theme.n + ' · ' + s.ef.n + '<br>Fala ' + s.wave + ' z ' + DATA.WAVES + ' · pokonani: ' + s.kills + ' · HP zamku: ' + s.hp + '/' + s.hpMax +
-      '<br>Wieże: ' + s.towers.length + (Object.keys(paths).length ? ' · ścieżki: ' + Object.keys(paths).map(function (k) { return k + ' ×' + paths[k]; }).join(', ') : '') + '</p><div class="btns"><button class="main" data-a="again">Jeszcze raz</button><button data-a="tomenu">Menu główne</button></div>', 'end');
+    var html = ('<h1>' + (win ? 'Bastion obroniony!' : 'Zamek padł') + '</h1><p style="font-size:15px;color:#fff">' + s.f.n + ' · ' + s.diff.n + '<br>' + s.theme.n + ' · ' + s.ef.n + '<br>Fala ' + s.wave + ' z ' + DATA.WAVES + ' · pokonani: ' + s.kills + ' · HP zamku: ' + s.hp + '/' + s.hpMax +
+      '<br><b style="color:#f4c54e;font-size:17px">Wynik: ' + s.score + ' pkt</b> · ' + (s.hc ? 'czas gry ' + clockText(s.real) : 'czas walki ' + clockText(s.fight)) +
+      '<br><span style="font-size:12px">za pokonanych ' + (s.score - s.scoreHp - s.scoreTime) + ' · za HP zamku ' + s.scoreHp + ' · za czas fal ' + s.scoreTime + '</span>' +
+      '<br>Wieże: ' + s.towers.length + (Object.keys(paths).length ? ' · ścieżki: ' + Object.keys(paths).map(function (k) { return k + ' ×' + paths[k]; }).join(', ') : '') + '</p><div class="btns"><button class="main" data-a="again">Jeszcze raz</button><button data-a="tomenu">Menu główne</button></div>');
+    var w = { entry: entry, diff: s.did, html: html };
+    if (cfg.share === null) { consentWait = w; consentScreen(); return; }
+    if (cfg.share) sendResult(w);
+    plain(html, 'end');
   }
   function begin() {
     closeU5(); setW2('idle'); buildType = null; drag = null; hover = null; speed = 1; setDrawer(false);
     $('fx').innerHTML = '';
     buildGround(); initPanel(); updatePanel();
     lastPhase = S().phase;
+    wall = Date.now();
   }
   function newGame() {
     var last = {};
     try { last = JSON.parse(fetchStore(LAST) || '{}'); } catch (e) { }
+    store(CLOCK, null);
     GAME.newGame({ faction: pick.faction, diff: pick.diff, lastTheme: last.t, lastEnemy: last.e });
     store(LAST, JSON.stringify({ t: S().theme.id, e: S().ef.id }));
     store(PICK, JSON.stringify(pick));
@@ -1032,27 +1315,43 @@
     say('tap');
     if (b.hasAttribute('data-f')) { pick.faction = b.getAttribute('data-f'); pickMenu(); return; }
     if (b.hasAttribute('data-d')) { pick.diff = b.getAttribute('data-d'); pickMenu(); return; }
+    if (b.hasAttribute('data-rt')) { rankScreen(b.getAttribute('data-rt')); return; }
     if (b.hasAttribute('data-castle')) { GAME.castleChoose(+b.getAttribute('data-castle')); persist(); if (S().castle.pending) castleScreen(); else hide(); return; }
     var a = b.getAttribute('data-a');
-    if (a === 'new' || a === 'again') { if (coarse()) fullscreen(); newGame(); }
+    if (a === 'new' || a === 'again') { keepGameNick(); if (coarse()) fullscreen(); newGame(); }
     else if (a === 'resume') {
       var ok = null;
       try { ok = GAME.load(fetchStore(SAVE)); } catch (e) { ok = null; }
-      if (!ok) { store(SAVE, null); menuScreen(); return; }
+      if (!ok) { store(SAVE, null); mainMenu(); return; }
       if (coarse()) fullscreen();
+      loadClock();
       pick.faction = S().f.id; pick.diff = S().did; begin(); hide();
-    } else if (a === 'help') helpScreen();
-    else if (a === 'tomenu') menuScreen();
+    } else if (a === 'newgame') {       // zapis znika dopiero po „Graj” na wyborze zamku
+      if (savedData()) askNew(!askOpen()); else menuScreen();
+    } else if (a === 'replace') menuScreen();
+    else if (a === 'askno') askNew(false);
+    else if (a === 'rank') rankScreen();
+    else if (a === 'rsrc') { rankSrc = rankSrc === 'all' ? 'mine' : 'all'; rankScreen(rankTab); }
+    else if (a === 'share-yes' || a === 'share-no') consentAnswer(a === 'share-yes');
+    else if (a === 'set') settingsScreen();
+    else if (a === 'who') authorsScreen();
+    else if (a === 'help') helpScreen();
+    else if (a === 'tomenu') mainMenu();
+    else if (a === 'exit') exitAsk('menu');
+    else if (a === 'stay') exitStay();
+    else if (a === 'quit') exitGame();
     else if (a === 'close') hide();
     else if (a === 'full') fullscreen();
-    else if (a === 'sound' || a === 'vib') {
-      var key = a === 'sound' ? 'sound' : 'vib';
-      cfg[key] = !cfg[key];
+    else if (a === 'sound' || a === 'vib' || a === 'share') {
+      var key = a;
+      cfg[key] = cfg[key] !== true;
+      if (key === 'share' && !cfg.share) ONLINE.clear();       // wyłączenie kasuje też to, co jeszcze czeka na wysłanie
       store(SET, JSON.stringify(cfg));
       SFX.set(cfg.sound, cfg.vib);
-      b.classList.toggle('off', !cfg[key]);
-      if (cfg[key]) { if (key === 'sound') SFX.play('done'); else SFX.buzz('done'); }
-      hint((key === 'sound' ? 'Dźwięk: ' : 'Wibracje: ') + (cfg[key] ? 'włączone' : 'wyłączone'), 1600);
+      b.classList.toggle('on', cfg[key]);
+      b.setAttribute('aria-pressed', cfg[key]);
+      b.querySelector('em').textContent = cfg[key] ? 'włączone' : 'wyłączone';
+      if (cfg[key]) { if (key === 'sound') SFX.play('done'); else if (key === 'vib') SFX.buzz('done'); }
     }
   });
 
@@ -1168,7 +1467,16 @@
   $('boss').addEventListener('click', function () { var b = GAME.nextBoss(); if (b) hint('Fala ' + b.wave + ': ' + b.name + '. ' + b.d + (b.resist ? ' Odporny na: ' + b.resist + ' (35% mniej obrażeń).' : ''), 4500); });
   $('rotok').addEventListener('click', function () { $('rot').className = ''; setTimeout(layout, 50); });
   document.addEventListener('keydown', function (ev) {
-    if (modal) { if (ev.key === 'Escape' && (modal === 'castle' || modal === 'confirm' || modal === 'start')) hide(); return; }
+    if (modal) {
+      if (ev.key === 'Escape') {
+        if (modal === 'exitask') exitStay();
+        else if (modal === 'castle' || modal === 'confirm' || modal === 'start') hide();
+        else if (modal === 'main') askNew(false);
+        else if (modal === 'help') settingsScreen();
+        else if (modal === 'menu' || modal === 'settings' || modal === 'authors' || modal === 'rank') mainMenu();
+      }
+      return;
+    }
     if (!S()) return;
     if (ev.key === 'Escape') {
       if (sel) closeU5(); else if (drawerOpen) setDrawer(false); else if (buildType) { buildType = null; hover = null; } else if (isOpen()) setW2('idle'); else openMenu();
@@ -1182,12 +1490,14 @@
   window.addEventListener('resize', layout);
   /* Aplikacja schodzi w tło: zapisz, wstrzymaj grę i dźwięk. */
   function appPause() {
-    if (S() && !S().result && modal !== 'menu') persist();
+    tickClock(); saveClock();
+    if (S() && !S().result && !inMenu()) persist();
     if (S() && !modal && !S().result && !sel && !isOpen()) openMenu();
     SFX.suspend();
   }
   document.addEventListener('visibilitychange', function () { if (document.hidden) appPause(); else awake = null; });
   window.addEventListener('pagehide', appPause);
+  window.addEventListener('online', function () { if (cfg.share === true) ONLINE.flush(); netAt = 0; });
   ['pointerdown', 'pointerup', 'keydown'].forEach(function (n) { document.addEventListener(n, function () { SFX.unlock(); }, true); });
   /* Przycisk „Wstecz” w Androidzie (wariant K5): w grze tylko pauzuje i nic więcej. Nie wznawia, nie wychodzi do menu
      i nie zamyka aplikacji; wznawia przycisk fali, a do menu prowadzi kółko „Menu”. */
@@ -1201,6 +1511,7 @@
   function frame(ts) {
     var dt = Math.min(0.1, (ts - last) / 1000 || 0);
     last = ts; clock += dt;
+    tickClock();
     tickW2();
     var s = S();
     /* gra stoi, gdy otwarte jest okno, menu przycisku fali albo panel wieży */
@@ -1214,7 +1525,7 @@
       if (s.banner && s.banner !== lastBanner && !modal) { lastBanner = s.banner; var msg = s.banner.text; setTimeout(function () { if (!modal) hint(msg, 3200); }, 1100); }
       if (sel && s.towers.indexOf(sel) < 0) closeU5();
       while (s.ev.length) { var cueName = s.ev.shift(); say(cueName); if (cueName === 'hurt' || cueName === 'boss') SFX.buzz(cueName); }
-      if (s.result && modal !== 'end' && modal !== 'menu') endScreen();
+      if (s.result && !s.ended) { s.ended = true; endScreen(); }     // raz na grę: wynik zapisuje się tylko raz
     }
     keepAwake(!!(s && !modal && !s.result));
     updatePlacing(dt);
@@ -1225,12 +1536,13 @@
   }
 
   loadAssets(function () {
-    try { var c0 = JSON.parse(fetchStore(SET) || 'null'); if (c0) { cfg.sound = c0.sound !== false; cfg.vib = c0.vib !== false; } } catch (e) { }
+    try { var c0 = JSON.parse(fetchStore(SET) || 'null'); if (c0) { cfg.sound = c0.sound !== false; cfg.vib = c0.vib !== false; cfg.nick = cleanNick(c0.nick); cfg.share = c0.share === true ? true : c0.share === false ? false : null; } } catch (e) { }
     SFX.set(cfg.sound, cfg.vib);
     if (APP) document.body.classList.add('app');
     try { var p = JSON.parse(fetchStore(PICK) || 'null'); if (p && p.diff && DATA.DIFF[p.diff]) { pick.diff = p.diff; pick.faction = p.faction; } } catch (e) { }
     layout();
     intro(0);
+    if (cfg.share === true) ONLINE.flush();
     requestAnimationFrame(frame);
   });
   window.__back = back;
@@ -1238,7 +1550,7 @@
   window.__demo = {
     newGame: function (o) { clearTimeout(introT); pick.faction = o.faction; pick.diff = o.diff; GAME.newGame(o); begin(); hide(); },
     select: select, upgrade: function (t) { select(t); u5.view = 'cards'; renderU5(); }, refresh: function () { updatePanel(); updatePlacing(0); draw(); },
-    menu: menuScreen, placing: function (type, cell) { buildType = type; hover = cell; }, resize: layout, openMenu: openMenu, waveText: waveText, waveDone: waveDone,
+    menu: menuScreen, main: mainMenu, ranking: ranking, placing: function (type, cell) { buildType = type; hover = cell; }, resize: layout, openMenu: openMenu, waveText: waveText, waveDone: waveDone,
     state: function () { return { modal: modal, sel: sel, w2: w2.state, speed: speed, buildType: buildType, placing: isPlacing(), pan: pan, drawer: drawerOpen, layout: L }; },
     drawer: setDrawer,
     tick: function (ts) { frame(ts); }
