@@ -6,10 +6,19 @@ Cała gra to jeden plik `index.html` (Canvas, czysty JS, bez bibliotek i bez bud
 
 ## Granie online
 Po wypchnięciu na GitHuba strona wdraża się sama przez GitHub Pages:
-`https://TWOJ_LOGIN.github.io/NAZWA_REPO/`
+- obecna gra: https://barel0.github.io/ostatni-bastion/
+- demo nowych zasad: https://barel0.github.io/ostatni-bastion/demo/
 
 ## Granie lokalnie
-Otwórz `index.html` w przeglądarce.
+Otwórz `index.html` (albo `demo/index.html`) w przeglądarce.
+
+## Demo nowych zasad i aplikacja na Androida
+`demo/` to osobna wersja gry na telefon w poziomie: 4 frakcje, 20 fal, wieże ulepszane osobno, bramy nad drogą, tryb Hardcore, losowe mapy i drogi.
+
+- Instalacja na telefonie: [android/INSTALACJA.md](android/INSTALACJA.md)
+- Budowanie pliku APK: `python android/build.py --version X.Y --code N` (wymaga JDK i Android SDK; opis na początku `android/build.py`). Klucz podpisu nie jest częścią repozytorium.
+- Balans dema: `node tests/demo-sim.js 800`
+- Grafiki: KayKit (Kay Lousberg, www.kaylousberg.com), licencja CC0.
 
 ## Testy
 ```

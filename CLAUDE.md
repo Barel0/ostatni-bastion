@@ -26,6 +26,36 @@ Tower defence z elementami roguelike. Stały zamek na końcu ścieżki (pasywne 
 - Komputer (`@media (min-width:900px) and (min-height:541px)`, układ „kompakt”): cienka belka u góry (tytuł, statystyki, 🐞, ⛶), plansza skalowana do wysokości okna (`100vh - 184px`, wyśrodkowana), jedna belka na dole: wieże (klawisz, koszt i licznik n/7; nazwa w `title`) | `.mid` z umiejętnościami i przedmiotami | sterowanie (Start, x1, Zakończ, wyjście). Info o zaznaczonej wieży (`.info` z `#sel`) to dymek na dole planszy, widoczny tylko po zaznaczeniu (`#app.hassel`). Węższe ekrany i pion mają stos jak dawniej. Zrzuty sprawdzono w Edge headless (1366×768, 1920×1080).
 - Menu startowe ma też Ranking, Tournament i Dominion (na razie puste, `MODES`) oraz „???”. Pełny ekran włącza się przy pierwszym kliknięciu lub klawiszu (przeglądarki wymagają gestu) i przyciskiem ⛶.
 
+## Demo nowych zasad (`demo/`)
+Online: https://barel0.github.io/ostatni-bastion/demo/ (GitHub Pages w trybie „branch”: publikuje całą gałąź `main`, więc każdy push publikuje też demo; lokalny `.github/workflows/pages.yml` jest ignorowany przez git i nieużywany). Nowy plik gry trzeba dopisać do `android/build.py` i testów.
+Osobna grywalna wersja z nowymi zasadami (zaakceptowane przez użytkownika 2026-11-27). Nie zmienia `index.html`. Kierunek: Android w poziomie, grafiki KayKit (CC0).
+- `demo/index.html` (układ), `ui.js` (Canvas, dotyk, panele), `game.js` (logika bez DOM), `data.js` (liczby i teksty), `roads.js` (generator dróg 16×9), `assets.js` (wygenerowane sprite'y, nie edytować ręcznie). Bez bibliotek i etapu budowania; ES5-style.
+- Zasady: 20 fal; frakcja ma 4 zwykłe rodzaje wież i bramę jako piątą wieżę (odblokowania w falach 1, 1, 3, 6, 15); miejsca na zwykłe wieże 3/4/5/6/7 (od fal 1/3/6/10/15), od fali 15 osobne miejsce na bramę, najwyżej 3 jednego rodzaju; każda wieża ulepszana osobno (4 poziomy: ścieżka, 2 karty, mistrzostwo; brama tylko mistrzostwo za 2 punkty), 25 punktów na grę; ścieżkę pokazuje kolor obramówki; mapa, droga i frakcja wrogów są losowe.
+- Sprite'y: `demo/tools/render_sprites.py` (Blender; potrzebuje wypakowanej kolekcji KayKit i skryptów makiet z `Downloads/ostatni-bastion-makiety-kaykit/skrypty`), potem `demo/tools/pack_atlas.py`.
+- Test i balans: `node tests/demo-sim.js 800` (bot; `GATE="crown=1.2,..."` i `HCHP=` do strojenia). Stan: Łatwy ~97%, Normalny ~54% (frakcje 48–58%), Trudny ~17%, Hardcore ~11%. Po zmianie liczb w `data.js` lub `game.js` uruchom go ponownie.
+
+### Interfejs i bramy (zaakceptowane 2026-11-28; szkice w `Downloads/ostatni-bastion-makiety-kaykit/szkice-intro-hud/`)
+- Intro przy uruchomieniu: logo „mAInIAc dev” 2 s → nazwa gry 2 s → wybór zamku (twarde cięcia, stuknięcie przeskakuje). Wybór zamku: rozmyte tło i pozostałe zamki, ostry tylko wybrany; żar Z8 tylko w Hardcore.
+- Scena ma jednostki 915×412 skalowane do ekranu (`layout()`). HUD „E8 Czyste pole” (zatwierdzony 2026-11-28, zastąpił M2): płótno obejmuje cały ekran (`L.ox/oy/ew/eh`, łąka i droga ciągną się poza planszę 16×9), u góry po lewej pasek statystyk i pozioma drabinka 20 fal, po prawej napis o bossie, umiejętności w lewym dolnym rogu, kółko „Wieże” wysuwa pasek 5 wież (chowa się po użyciu), ★ obok przycisku fali (`STAR_SPOTS`: ucieka, gdy zasłaniałaby wieżę). Element zasłaniający wieżę jest półprzezroczysty, a między falami stuknięcie w pole z wieżą pod przyciskiem wybiera wieżę.
+- Przycisk fali „W2” (w Hardcore „W10”): stuknięcie < 0,4 s uruchamia falę po puszczeniu; przytrzymanie 2 s pauzuje i pokazuje prędkość oraz menu; wznawia ten sam przycisk; wyjście w trakcie fali pyta „Na pewno?”.
+- Stawianie (wariant B): HUD znika, plansza rośnie na całą szerokość i przesuwa się za palcem; anulowanie w lewym górnym rogu. Podniesienie podglądu nad palec maleje przy dolnej krawędzi (`liftAt`), inaczej dolny rząd jest nieosiągalny.
+- Panel wieży „U5”: przyciski w kole, tło rozmyte, ostra tylko zaznaczona wieża, gra stoi. Napis „FALA x” (F7 „Żar”, 1 s + 1 s zanikania), ptaszek po fali (P7, 1 s).
+- Brama (typ `legend`, `t.c/t.r` = kratka drogi, `t.o` v/h, `t.k` = indeks drogi): zajmuje po polu z obu stron prostej drogi (`footprint`, `gateSpot`), atakuje w strefie `e.d` w `k±2,5`. Korona: włócznie i krata; Las: salwy i znacznik; Gildia: Rogatka (myto, +tempo wież przy filarach); Zakon: pioruny ×2 na spowolnionych. Bramy ignorują pola specjalne. Brama skupia wszystkie pociski, gdy wrogów jest mniej.
+- Hardcore (`DIFF.hardcore`, `DATA.HARDCORE`): start 1 HP, zamek płonie przy HP ≤30%, +2 HP po bossie, leczenie z nagród bez zmian, wzmocnienia wrogów i losowa odporność bossa (−35%).
+- Grafiki bram: `demo/tools/render_gates.py` dopisuje je do sprite'ów po `render_sprites.py`.
+- Zapis: klucz `bib-demo2-save`, format `v: 2` (stare zapisy dema są pomijane).
+
+## Aplikacja na Androida (`android/`)
+Użytkownik wybrał APK (2026-11-28) i chce dać grę innym. Opakowanie: własna aktywność z WebView (`MainActivity.java`), bez bibliotek i bez Gradle; zasada „bez etapu budowania” dotyczy gry, ten folder tylko ją pakuje.
+- Budowanie: `JAVA_HOME=%USERPROFILE%\android-tools\jdk ANDROID_HOME=%USERPROFILE%\android-tools\sdk python android/build.py --version 0.3 --code 3`. Każde wydanie musi mieć większy `--code`. APK trafia do `Downloads\OstatniBastion-apk\`.
+- Klucz podpisu i hasło: `%USERPROFILE%\ostatni-bastion-klucz\` (poza repozytorium; nie dodawać do gita, nie wypisywać hasła). Inny klucz = gracze muszą odinstalować grę i tracą zapisy.
+- `applicationId` to `pl.maniacdev.ostatnibastion`; zmiana po rozdaniu APK tworzy osobną aplikację.
+- Aplikacja nie ma uprawnienia do internetu. Mostek `window.BibApp`: `vibrate("ms,ms")`, `keepAwake(bool)`. Zejście w tło woła `window.__appPause()`. Przycisk „Wstecz” (`window.__back()`) działa w wariancie K5 wybranym przez użytkownika: w grze tylko pauzuje; nie wznawia, nie otwiera menu i nigdy nie zamyka aplikacji.
+- Instrukcja dla graczy: `android/INSTALACJA.md` (po wydaniu nowej wersji zmień w niej nazwę pliku). Klucz ma kopię zapasową na komputerze użytkownika.
+- Nazwa bossa „Al Husain Wisimulaha” zostaje (decyzja użytkownika, 2026-11-28); nie zmieniać.
+- `android/icon.png` to ikona I3 „Płonący bastion” (wybrana przez użytkownika). Zatwierdzone też dźwięki, wibracje i zapisy. Ostatnie wydanie: 0.3 (code 3).
+- Dźwięki i wibracje: `demo/sfx.js` (Web Audio, bez plików). `game.js` tylko zgłasza zdarzenia w `S.ev` (`cue`), nie zmienia to mechaniki ani balansu.
+
 ## Treści wrażliwe
 Zamek niemiecki ma neutralną stylistykę wojskową bez symboli historycznych, kartel jest fikcyjną kreskówkową haciendą, Rasta używa szacunkowych motywów (lew, czerwień-złoto-zieleń). Zachowaj ten ton.
 
